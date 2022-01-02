@@ -54,7 +54,7 @@ for coin in data:
         data.remove(coin)
 
 # Drop stablecoins because its like having fiat in the data pool
-stablecoins = ['usdt','busd',"ust",'mim','frax','tusd','usdc']
+stablecoins = ['usdt','busd',"ust",'mim','frax','tusd','usdc','dai']
 
 for coin in data:
     for sc in stablecoins:
@@ -247,9 +247,9 @@ for coin in coinpool:
     if isdir == False:
         os.makedirs(dataDir)
         print("Directory '% s' created" % dataDir)
-        final_df.to_csv(f'{dataDir}{coin}.csv', index=False)
+        final_df.to_csv(f'{dataDir}{coin}.csv')
         print(f"Data for {coin} saved to {dataDir}")
 
     else:
-        final_df.to_csv(f'{dataDir}{coin}.csv', index=False)
+        final_df.to_csv(f'{dataDir}{coin}.csv')
         print(f"Data for {coin} saved to {dataDir}")
