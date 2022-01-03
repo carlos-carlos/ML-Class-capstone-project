@@ -46,12 +46,14 @@ print(coin_mdf.info())
 
 # Sort index
 coin_mdf.sort_index(inplace=True)
-print(coin_mdf.to_string())
+#print(coin_mdf.to_string())
+#print(coin_mdf.loc[('2022-01-02', 'bitcoin')]['Close'])
+#print(coin_mdf.index)
+
 
 # Saves the Coin MDF to a file
 dataDir = coinMDF_dataDir
 isdir = os.path.isdir(dataDir)
-print(isdir)
 
 # Save the MDF in a seprate directory for persistence
 if isdir == False:
