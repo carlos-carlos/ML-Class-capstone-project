@@ -106,21 +106,30 @@ coins = [x.split('.')[0] for x in dir_list]
 for coin in coins:
     # Read in current data
     current_df = pd.read_csv(coin_dataDir + f'{coin}.csv')
-    current_df = current_df.loc[:, ~current_df.columns.str.contains('^Unnamed')]
-    current_df = current_df.reindex(columns=["dates","open", "high", "low","close","volume"])
-    current_df['dates'] = pd.to_datetime(current_df['dates'])
-    current_df['dates'] = current_df['dates'].dt.normalize()
+    current_df.rename(columns={'Unnamed: 0': 'dates'}, inplace=True)
+    current_df = current_df.set_index('dates')
+
+    print('THE CURRENT DATA')
+    current_df.drop(current_df.index[-1],inplace=True)
+    current_df['dates'] = current_df.index
+    print(current_df.to_string())
 
     # Get the the new days data
     update_df = update_data(coin,fiat,start,end)
-    update_df = update_df.set_index('dates')
+    update_df["dates"] = update_df.index
 
+    print('THE UPDATE DF')
     print(update_df.to_string())
-    print(update_df.info())
+    #print(update_df.info())
 
-    # Sync up the columns and add the new day rows creating a new df in the process
-    update_df.columns = current_df.columns.tolist()
-    new_df = pd.concat([current_df, update_df]).drop_duplicates(subset=['dates'])
+    # combine the 2 dataframes
+    new_df = pd.concat([current_df, update_df])
+    new_df['dates'] = pd.to_datetime(new_df['dates'])
 
+    new_df = new_df.drop_duplicates(subset=["dates"])
+    new_df = new_df.drop(['dates'], axis=1)
+    #new_df = pd.concat([current_df, update_df]).drop_duplicates(subset=['dates'])
+
+    print('THE DATA AFTER THE UPDATE')
     print(new_df.to_string())
     print(new_df.info())
