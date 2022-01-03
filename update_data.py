@@ -12,7 +12,7 @@ import csv
 
 from pprint import pprint
 
-# Global Settings
+# GLOBAL SETTINGS
 
 # Time controls
 timezone = 'US/Eastern'
@@ -39,6 +39,9 @@ fiat ='usd'
 
 # Data directories
 coin_dataDir = 'DATA/COINHISTDATA/'
+#coin_dataDir = 'DATA/TESTDIR/' # Debug dir for testing I/O logic and/or issues. It should be a clone of the above dir.
+
+# END GLOBAL SETTINGS
 
 # Updater function
 def update_data(coin,fiat,start,end):
@@ -101,6 +104,7 @@ def update_data(coin,fiat,start,end):
 dir_list = os.listdir(coin_dataDir)
 coins = [x.split('.')[0] for x in dir_list]
 
+# Update the data
 for coin in coins:
     # Read in current data
     current_df = pd.read_csv(coin_dataDir + f'{coin}.csv')
@@ -123,3 +127,8 @@ for coin in coins:
     #print('THE DATA AFTER THE UPDATE')
     #print(new_df.to_string())
     #print(new_df.info())
+
+    # Save the updated
+    new_df.to_csv(f'{coin_dataDir}{coin}.csv')
+    print(f"Data for {coin} saved to {coin_dataDir}")
+
