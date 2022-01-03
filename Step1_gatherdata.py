@@ -107,14 +107,12 @@ def datagrabber(coin, fiat, start, end, ninetyDayPeriods):
     new_df['dates'] = pd.to_datetime(new_df['dates'], unit='ms')
     new_df = new_df.set_index('dates')
     new_df.index = new_df.index.tz_localize('UTC').tz_convert(current_timezone)
-    # print(new_df.to_string())
 
     # Prepare volume as we did before but this time its minutes of the present day, not the hours of the prior 90 days
     volumes_df = pd.DataFrame(data['total_volumes'], columns=['dates', 'volumes'])
     volumes_df['dates'] = pd.to_datetime(volumes_df['dates'], unit='ms')
     volumes_df = volumes_df.set_index('dates')
     volumes_df.index = volumes_df.index.tz_localize('UTC').tz_convert(current_timezone)
-    # print(volumes_df.to_string())
 
     # Prepare hourly market cap data
     cap_df = pd.DataFrame(data['market_caps'], columns=['dates', 'mcaps'])
@@ -135,9 +133,6 @@ def datagrabber(coin, fiat, start, end, ninetyDayPeriods):
          mcaps_df['mcaps']], \
         axis=1, keys=['Open', 'High', 'Low', 'Close', 'Volume', 'Market Cap'])
 
-    # ohlc_df = ohlc_df.append(todays_ohlc_df.iloc[-1], ignore_index=False)
-    # print(ohlc_df.to_string())
-
     # Getting more 90 day tranches of hourly OHLCV data. 4x90 = 360
     count = ninetyDayPeriods
     df_list = [todays_ohlc_df]
@@ -145,12 +140,12 @@ def datagrabber(coin, fiat, start, end, ninetyDayPeriods):
 
     while count > 0:
         print('Count is' + str(count) + f'for {coin}')
-        #print(df_list[0].index)
-        #print(df_list[0].to_string())
 
         start = df_list[0].index[0]
         end = start - datetime.timedelta(90)
-        #print('LOOK HERE') # Check this again once EDT returns
+
+        # Debug code
+        #print('LOOK HERE FOR DATES') # Check this again once EDT returns
         #print(start)
         #print(end)
 
@@ -159,7 +154,9 @@ def datagrabber(coin, fiat, start, end, ninetyDayPeriods):
         start = str(start)
 
         end = end.strftime('%s')
-        #print('LOOK HERE UNIX')
+
+        # Debug code
+        #print('LOOK HERE FOR UNIX STAMPS')
         #print(start)
         #print(end)
 
@@ -218,7 +215,6 @@ def datagrabber(coin, fiat, start, end, ninetyDayPeriods):
             time.sleep(5)
 
             test_joiner = pd.concat(df_list)
-            # print(test_joiner.info)
 
 
         except KeyError:
@@ -228,7 +224,6 @@ def datagrabber(coin, fiat, start, end, ninetyDayPeriods):
 
 
             test_joiner = pd.concat(df_list)
-            # print(test_joiner.info)
 
 
             break
