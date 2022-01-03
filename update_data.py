@@ -34,8 +34,8 @@ end = end.strftime('%s')  # make it epoch for the API
 # Fiat currency
 fiat ='usd'
 
-# Coin
-coin = 'bitcoin'
+# Coin (Debug code, remove the for loop below to use for debugging)
+#coin = 'bitcoin'
 
 # Data directories
 coin_dataDir = 'DATA/COINHISTDATA/'
@@ -64,14 +64,12 @@ def update_data(coin,fiat,start,end):
     new_df['dates'] = pd.to_datetime(new_df['dates'], unit='ms')
     new_df = new_df.set_index('dates')
     new_df.index = new_df.index.tz_localize('UTC').tz_convert(current_timezone)
-    # print(new_df.to_string())
 
     # Prepare volume as we did before but this time its minutes of the present day, not the hours of the prior 90 days
     volumes_df = pd.DataFrame(data['total_volumes'], columns=['dates', 'volumes'])
     volumes_df['dates'] = pd.to_datetime(volumes_df['dates'], unit='ms')
     volumes_df = volumes_df.set_index('dates')
     volumes_df.index = volumes_df.index.tz_localize('UTC').tz_convert(current_timezone)
-    # print(volumes_df.to_string())
 
     # Prepare hourly market cap data
     cap_df = pd.DataFrame(data['market_caps'], columns=['dates', 'mcaps'])
@@ -92,7 +90,7 @@ def update_data(coin,fiat,start,end):
          mcaps_df['mcaps']], \
         axis=1, keys=['Open', 'High', 'Low', 'Close', 'Volume', 'Market Cap'])
 
-    #ohlc_df = ohlc_df.append(todays_ohlc_df.iloc[-1], ignore_index=False)
+    # Debug code
     #print(todays_ohlc_df.to_string())
     #print(todays_ohlc_df.info)
 
@@ -108,28 +106,20 @@ for coin in coins:
     current_df = pd.read_csv(coin_dataDir + f'{coin}.csv')
     current_df.rename(columns={'Unnamed: 0': 'dates'}, inplace=True)
     current_df = current_df.set_index('dates')
-
-    print('THE CURRENT DATA')
     current_df.drop(current_df.index[-1],inplace=True)
     current_df['dates'] = current_df.index
-    print(current_df.to_string())
 
     # Get the the new days data
     update_df = update_data(coin,fiat,start,end)
     update_df["dates"] = update_df.index
 
-    print('THE UPDATE DF')
-    print(update_df.to_string())
-    #print(update_df.info())
-
-    # combine the 2 dataframes
+    # Combine the 2 dataframes
     new_df = pd.concat([current_df, update_df])
     new_df['dates'] = pd.to_datetime(new_df['dates'])
-
     new_df = new_df.drop_duplicates(subset=["dates"])
     new_df = new_df.drop(['dates'], axis=1)
-    #new_df = pd.concat([current_df, update_df]).drop_duplicates(subset=['dates'])
 
-    print('THE DATA AFTER THE UPDATE')
-    print(new_df.to_string())
-    print(new_df.info())
+    # Debug code
+    #print('THE DATA AFTER THE UPDATE')
+    #print(new_df.to_string())
+    #print(new_df.info())
