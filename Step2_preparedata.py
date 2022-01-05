@@ -109,10 +109,41 @@ keep = nobs[nobs>min_obs].index
 data = data.loc[idx[keep,:], :]
 #print(data.info())
 
-print(data.describe())
 
 # Cluster map with Seaborn
 clusterMap = sns.clustermap(data.corr('spearman'), annot=True, center=0, cmap='Blues')
 clusterMap.savefig('Cluster_Spearman_Blue.png')
 
 print(data.index.get_level_values('Coin').nunique())
+
+# Compute momentum factor based on difference between 3 and 12 month returns
+# And for differences between all periods and the most recent month returns
+
+# Most recent month and the rest
+for lag in [2,3,6,9,12]:
+    data[f'momentum_{lag}'] = data[f'return_{lag}m'].sub(data.return_1m)
+
+# 3 and 12 month returns
+data["momentum_3_12"] = data["return_12m"].sub(data.return_3m)
+
+# Move historical returns up to current period so they can be used as features
+for t in range(1,7):
+    data[f'return_1m_t-{t}'] = data.groupby(level='Coin').return_1m.shift(t)
+
+# Returns for various holding periods, using the previous normalized returns, shifted back to align with current features
+for t in [1,2,3,6,12]:
+    data[f'target_{t}m'] = (data.groupby(level='Coin')
+                            [f'return_{t}m'].shift(-t))
+
+print(data.info())
+print(data.describe())
+#print(data.to_string())
+
+
+# Adding time indicators
+dates = data.index.get_level_values('Dates')
+data['year'] = dates.year
+data['month'] = dates.month
+
+print(dates)
+
