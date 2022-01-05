@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 import sklearn as skl
+import seaborn as sns
 
 import requests
 import datetime
@@ -19,6 +20,12 @@ coin_dataDir = 'DATA/COINHISTDATA/'
 #coin_dataDir = 'DATA/TESTDIR/' # Debug dir for testing I/O logic and/or issues. It should be a clone of the above dir.
 coinMDF_dataDir = 'DATA/COMBINEDDATA/'
 
+# Date ranges
+START = 2020
+END = 2022
+
+# Helpers
+idx = pd.IndexSlice
 
 # END GLOBAL SETTINGS
 
@@ -42,7 +49,7 @@ print("Read data for " + str(len(coin_dfs)) + " coins.")
 
 # Create MultiIndex Dataframe for all the coins
 coin_mdf = pd.concat(coin_dfs)
-print(coin_mdf.info())
+#print(coin_mdf.info())
 
 # Sort index
 coin_mdf.sort_index(inplace=True)
@@ -55,7 +62,7 @@ coin_mdf.sort_index(inplace=True)
 dataDir = coinMDF_dataDir
 isdir = os.path.isdir(dataDir)
 
-# Save the MDF in a seprate directory for persistence
+# Save the initial pool MDF in a seprate directory for persistence and "just in case" purposes
 if isdir == False:
     os.makedirs(dataDir)
     print("Directory '% s' created" % dataDir)
@@ -67,5 +74,45 @@ else:
     print(f"The initial pool of coins has been saved to {dataDir} as a MultiIndex dataframe")
 
 
+# Isolate the close prices
+close_df = coin_mdf.loc[idx[str(START):str(END), :], 'Close'].unstack('Coin')
+#print(close_df.info)
 
+# Calculate lagged returns
+outlier_threshold = 0.01
+data = pd.DataFrame()
+lags = [1, 2, 3, 6, 9, 12]
 
+# This block stacks the wide MDF to long formant while also:
+# Winsorizing outliers in the returns at the 1% and 99% levels
+# Capping outliers and the aforementioned levels
+# Normalize the returns via geometric mean
+for lag in lags:
+    data[f'return_{lag}m'] = (close_df
+                           .pct_change(lag)
+                           .stack()
+                           .pipe(lambda x: x.clip(lower=x.quantile(outlier_threshold),
+                                                  upper=x.quantile(1-outlier_threshold)))
+                           .add(1)
+                           .pow(1/lag)
+                           .sub(1)
+                           )
+# Resulting in compunded daily returns for the six monthly periods in the lags list above
+data = data.swaplevel().dropna()
+#print(data.info())
+#print(data.to_string())
+
+# Drop coins with less than one year of returns
+min_obs = 365
+nobs = data.groupby(level='Coin').size()
+keep = nobs[nobs>min_obs].index
+data = data.loc[idx[keep,:], :]
+#print(data.info())
+
+print(data.describe())
+
+# Cluster map with Seaborn
+clusterMap = sns.clustermap(data.corr('spearman'), annot=True, center=0, cmap='Blues')
+clusterMap.savefig('Cluster_Spearman_Blue.png')
+
+print(data.index.get_level_values('Coin').nunique())
