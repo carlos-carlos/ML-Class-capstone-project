@@ -102,6 +102,8 @@ def update_data(coin,fiat,start,end):
 
     return todays_ohlc_df
 
+# START UPDATE LOGIC
+
 # Decide each time whether to update the data or use the existing local data
 # Might want to do this if offline or if you are debugging and don't want to slam the API each time you run the script.
 print('Would you like to update the local data?')
@@ -114,18 +116,15 @@ if should_update == 'y':
 
     # Update the data
     for coin in coins:
-
         # Read in current data
         current_df = pd.read_csv(coin_dataDir + f'{coin}.csv')
-        print(current_df.columns)
         current_df.rename(columns={'Unnamed: 0': 'dates'}, inplace=True)
-        print(current_df.columns)
         current_df = current_df.set_index('dates')
-        current_df.drop(current_df.index[-1],inplace=True)
+        current_df.drop(current_df.index[-1], inplace=True)
         current_df['dates'] = current_df.index
 
         # Get the the new days data
-        update_df = update_data(coin,fiat,start,end)
+        update_df = update_data(coin, fiat, start, end)
         update_df["dates"] = update_df.index
 
         # Combine the 2 dataframes
@@ -135,57 +134,105 @@ if should_update == 'y':
         new_df = new_df.drop(['dates'], axis=1)
 
         # Debug code
-        #print('THE DATA AFTER THE UPDATE')
-        #print(new_df.to_string())
-        #print(new_df.info())
+        # print('THE DATA AFTER THE UPDATE')
+        # print(new_df.to_string())
+        # print(new_df.info())
 
         # Save the updated
         new_df.to_csv(f'{coin_dataDir}{coin}.csv')
         print(f"Data for {coin} saved to {coin_dataDir}")
 
+        # END UPDATE LOGIC
 
-# Read in the data csvs into Pandas
-dir_list = os.listdir(coin_dataDir)
-coins = [x.split('.')[0] for x in dir_list]
+    # Create a single pool of coins
 
-# Read in current data and set multiIndex
-coin_dfs = []
+    # Read in the data csvs into Pandas
+    dir_list = os.listdir(coin_dataDir)
+    coins = [x.split('.')[0] for x in dir_list]
 
-for coin in coins:
-    current_df = pd.read_csv(coin_dataDir + f'{coin}.csv')
-    current_df.rename(columns={'Unnamed: 0': 'Dates'}, inplace=True)
-    current_df['Coin'] = coin
-    current_df['Dates'] = pd.to_datetime(current_df['Dates'])
-    current_df.set_index(['Dates', 'Coin'], inplace=True)
+    # Read in current data and set multiIndex
+    coin_dfs = []
 
-    coin_dfs.append(current_df)
+    for coin in coins:
+        current_df = pd.read_csv(coin_dataDir + f'{coin}.csv')
+        current_df.rename(columns={'Unnamed: 0': 'Dates'}, inplace=True)
+        current_df['Coin'] = coin
+        current_df['Dates'] = pd.to_datetime(current_df['Dates'])
+        current_df.set_index(['Dates', 'Coin'], inplace=True)
 
-print("Read data for " + str(len(coin_dfs)) + " coins.")
+        coin_dfs.append(current_df)
 
-# Create MultiIndex Dataframe for all the coins
-coin_mdf = pd.concat(coin_dfs)
-#print(coin_mdf.info())
+    print("Read data for " + str(len(coin_dfs)) + " coins.")
 
-# Sort index
-coin_mdf.sort_index(inplace=True)
-print(coin_mdf.to_string())
-#print(coin_mdf.loc[('2022-01-02', 'bitcoin')]['Close'])
-#print(coin_mdf.index)
+    # Create MultiIndex Dataframe for all the coins
+    coin_mdf = pd.concat(coin_dfs)
+    # print(coin_mdf.info())
 
+    # Sort index
+    coin_mdf.sort_index(inplace=True)
+    print(coin_mdf.to_string())
+    #print(coin_mdf.loc[('2022-01-02', 'bitcoin')]['Close'])
+    #print(coin_mdf.index)
 
-# Saves the Coin MDF to a file
-dataDir = coinMDF_dataDir
-isdir = os.path.isdir(dataDir)
+    # Saves the Coin MDF to a file
+    dataDir = coinMDF_dataDir
+    isdir = os.path.isdir(dataDir)
 
-# Save the initial pool MDF in a seprate directory for persistence and "just in case" purposes
-if isdir == False:
-    os.makedirs(coinMDF_dataDir)
-    print("Directory '% s' created" % coinMDF_dataDir)
-    coin_mdf.to_csv(f'{coinMDF_dataDir}CoinPool.csv')
-    print(f"The initial pool of coins has been saved to {coinMDF_dataDir} as a MultiIndex dataframe")
+    # Save the initial pool MDF in a seprate directory for persistence and "just in case" purposes
+    if isdir == False:
+        os.makedirs(coinMDF_dataDir)
+        print("Directory '% s' created" % coinMDF_dataDir)
+        coin_mdf.to_csv(f'{coinMDF_dataDir}CoinPool.csv')
+        print(f"The initial pool of coins has been saved to {coinMDF_dataDir} as a MultiIndex dataframe")
+
+    else:
+        coin_mdf.to_csv(f'{coinMDF_dataDir}CoinPool.csv')
+        print(f"The initial pool of coins has been saved to {coinMDF_dataDir} as a MultiIndex dataframe")
 
 else:
-    coin_mdf.to_csv(f'{coinMDF_dataDir}CoinPool.csv')
-    print(f"The initial pool of coins has been saved to {coinMDF_dataDir} as a MultiIndex dataframe")
+
+    # Read in the data csvs into Pandas
+    dir_list = os.listdir(coin_dataDir)
+    coins = [x.split('.')[0] for x in dir_list]
+
+    # Read in current data and set multiIndex
+    coin_dfs = []
+
+    for coin in coins:
+        current_df = pd.read_csv(coin_dataDir + f'{coin}.csv')
+        current_df.rename(columns={'Unnamed: 0': 'Dates'}, inplace=True)
+        current_df['Coin'] = coin
+        current_df['Dates'] = pd.to_datetime(current_df['Dates'])
+        current_df.set_index(['Dates', 'Coin'], inplace=True)
+
+        coin_dfs.append(current_df)
+
+    print("Read data for " + str(len(coin_dfs)) + " coins.")
+
+    # Create MultiIndex Dataframe for all the coins
+    coin_mdf = pd.concat(coin_dfs)
+    #print(coin_mdf.info())
+
+    # Sort index
+    coin_mdf.sort_index(inplace=True)
+    print(coin_mdf.to_string())
+    #print(coin_mdf.loc[('2022-01-02', 'bitcoin')]['Close'])
+    #print(coin_mdf.index)
+
+
+    # Saves the Coin MDF to a file
+    dataDir = coinMDF_dataDir
+    isdir = os.path.isdir(dataDir)
+
+    # Save the initial pool MDF in a seprate directory for persistence and "just in case" purposes
+    if isdir == False:
+        os.makedirs(coinMDF_dataDir)
+        print("Directory '% s' created" % coinMDF_dataDir)
+        coin_mdf.to_csv(f'{coinMDF_dataDir}CoinPool.csv')
+        print(f"The initial pool of coins has been saved to {coinMDF_dataDir} as a MultiIndex dataframe")
+
+    else:
+        coin_mdf.to_csv(f'{coinMDF_dataDir}CoinPool.csv')
+        print(f"The initial pool of coins has been saved to {coinMDF_dataDir} as a MultiIndex dataframe")
 
 
