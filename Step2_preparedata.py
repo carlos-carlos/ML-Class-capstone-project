@@ -35,10 +35,10 @@ end = end.strftime('%s')  # make it epoch for the API
 fiat ='usd'
 
 # Data directories
-#coin_dataDir = 'DATA/COINHISTDATA/'
-coin_dataDir = 'DATA/TESTDIR/HIST/' # Debug dir for testing I/O logic and/or issues. It should be a clone of the above dir.
-#coinMDF_dataDir = 'DATA/COMBINEDDATA/'
-coinMDF_dataDir = 'DATA/TESTDIR/POOL/' # Debug dir for testing. It should be a clone of the above dir.
+coin_dataDir = 'DATA/COINHISTDATA/'
+#coin_dataDir = 'DATA/TESTDIR/HIST/' # Debug dir for testing I/O logic and/or issues. It should be a clone of the above dir.
+coinMDF_dataDir = 'DATA/COMBINEDDATA/'
+#coinMDF_dataDir = 'DATA/TESTDIR/POOL/' # Debug dir for testing. It should be a clone of the above dir.
 
 # Helpers
 idx = pd.IndexSlice
