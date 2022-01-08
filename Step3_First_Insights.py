@@ -18,6 +18,7 @@ from pprint import pprint
 # Data directories
 #coin_dataDir = 'DATA/TESTDIR/' # Debug dir for testing I/O logic and/or issues. It should be a clone of the above dir.
 coin_dataDir = 'DATA/COMBINEDDATA/'
+plot_dataDir = 'DATA/INITIAL_INSIGHTS/'
 
 # Date ranges
 START = 2020
@@ -69,8 +70,9 @@ data = data.loc[idx[keep,:], :]
 
 # Cluster map with Seaborn
 clusterMap = sns.clustermap(data.corr('spearman'), annot=True, center=0, cmap='Blues')
-clusterMap.savefig('Cluster_Spearman_Blue.png')
+clusterMap.savefig(plot_dataDir + 'Cluster_Spearman_Blue.png')
 
+print('Coins with Unique Values:')
 print(data.index.get_level_values('Coin').nunique())
 
 # Compute momentum factor based on difference between 3 and 12 month returns
