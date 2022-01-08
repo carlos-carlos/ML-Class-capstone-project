@@ -145,5 +145,5 @@ dates = data.index.get_level_values('Dates')
 data['year'] = dates.year
 data['month'] = dates.month
 
-print(dates)
+#print(dates)
 
