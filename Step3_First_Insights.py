@@ -3,7 +3,6 @@ import pandas as pd
 import sklearn as skl
 import seaborn as sns
 
-import requests
 import datetime
 import time
 import os
@@ -89,7 +88,7 @@ data["momentum_3_12"] = data["return_12m"].sub(data.return_3m)
 for t in range(1,7):
     data[f'return_1m_t-{t}'] = data.groupby(level='Coin').return_1m.shift(t)
 
-# Returns for various holding periods, using the previous normalized returns, shifted back to align with current features
+# Target forward returns for various holding periods, using the previous normalized returns
 for t in [1,2,3,6,12]:
     data[f'target_{t}m'] = (data.groupby(level='Coin')
                             [f'return_{t}m'].shift(-t))
