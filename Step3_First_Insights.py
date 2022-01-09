@@ -56,7 +56,7 @@ print(cpool_mdf.info())
 close_df = cpool_mdf.loc[idx[str(START):str(END), :], 'Close'].unstack('Coin')
 
 # Optionally resamble the daily closes to monthly instead of daily data
-#close_df = close_df.resample('M').last()
+close_df = close_df.resample('M').last()
 #print(close_df.to_string())
 
 # Calculate lagged returns
@@ -81,13 +81,13 @@ for lag in lags:
 
 # Resulting in compunded daily returns for the six monthly periods in the lags list above
 data = data.swaplevel().dropna()
-print(data.to_string())
 
 # Drop coins with less than one year of returns
-min_obs = 365
+min_obs = 12 # number of months
 nobs = data.groupby(level='Coin').size()
 keep = nobs[nobs>min_obs].index
 data = data.loc[idx[keep,:], :]
+print(data.to_string())
 
 
 
