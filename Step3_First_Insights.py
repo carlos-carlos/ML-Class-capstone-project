@@ -3,6 +3,8 @@ import pandas as pd
 import sklearn as skl
 import seaborn as sns
 import matplotlib.pyplot as plt
+from sklearn.feature_selection import mutual_info_regression
+
 
 
 import datetime
@@ -87,13 +89,13 @@ min_obs = 12 # number of months
 nobs = data.groupby(level='Coin').size()
 keep = nobs[nobs>min_obs].index
 data = data.loc[idx[keep,:], :]
-print(data.to_string())
+#print(data.to_string())
 
 
 
 # Cluster map with Seaborn
-clusterMap = sns.clustermap(data.corr('spearman'), annot=True, center=0, cmap='Blues')
-clusterMap.savefig(plot_dataDir + 'Cluster_Spearman_Blue.png')
+#clusterMap = sns.clustermap(data.corr('spearman'), annot=True, center=0, cmap='Blues')
+#clusterMap.savefig(plot_dataDir + 'Cluster_Spearman_Blue.png')
 
 print('Coins with Unique Values:')
 print(data.index.get_level_values('Coin').nunique())
@@ -119,15 +121,17 @@ for t in [1,2,3,6,12]:
 
 print(data.info())
 print(data.describe())
+print(data.to_string())
+
 
 # Check return distributions
-dist_mdf = data
-#dist_mdf.drop('bitcoin', level=1, axis=0, inplace=True)
-#dist_mdf.drop('ethereum', level=1, axis=0, inplace=True)
-distPlot = sns.distplot(dist_mdf.return_1m)
-distPlot = sns.despine()
-#plt.tight_layout()
-distPlot = plt.savefig(plot_dataDir + 'Price_Distribution_Plot.png')
+for x in data.loc[:,:'return_12m'].columns:
+    print(x)
+    sns_distPlot = sns.distplot(data[f'{x}'])
+    sns.despine()
+    plt.savefig(plot_dataDir + f'{x}Distplot.png')
+
+
 
 # Adding time indicators
 dates = data.index.get_level_values('Dates')
@@ -135,3 +139,13 @@ data['year'] = dates.year
 data['month'] = dates.month
 #print(dates)
 
+
+# Log-transform scatter plots
+log_trans_mdf = data
+X_all = log_trans_mdf.drop(log_trans_mdf.loc[:,:'return_1m_t-6'], axis=1)
+y = np.log(log_trans_mdf.loc[:,'target_1m':])
+
+mi_reg = pd.Series(mutual_info_regression(X_all, y),
+                   index=X_all.columns).sort_values(ascending=False)
+
+print(mi_reg.info())
