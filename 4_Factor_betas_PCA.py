@@ -27,20 +27,10 @@ plot_dataDir = 'DATA/INITIAL_INSIGHTS/'
 START = 2020
 END = 2022
 
-# Lag periods for monthly or daily close prices to make returns for various periods
-
-# Monthly close lags
-#lags = {'lagged_returns':[1, 2, 3, 6, 9, 12],
-#        "recent_month_returns":[2, 3, 6, 9, 12],
-#        "target_forward_returns": [1,2,3,6,12]}
-
-# Daily close lags
-#lags = {'lagged_returns':[1, 7, 14, 30, 61, 91,183,274,365 ],
-#        "recent_month_returns":[61, 91, 183, 274, 365],
-#        "target_forward_returns": [30,61,91,183,365]}
-
 # Helpers
 idx = pd.IndexSlice
+sns.set_style('whitegrid')
+np.random.seed(42)
 
 # END GLOBAL SETTINGS
 
@@ -84,3 +74,52 @@ pca = PCA(n_components='mle')
 fitted_returns = pca.fit(returns_df)
 
 print(fitted_returns)
+
+# Plot the Explained Variance and Top Factors
+# The top Factors found by PCA can be used as the "Risk Factors" for our model instead of the FAMA-French Risk Factors
+fig, axes = plt.subplots(ncols=2, figsize=(14, 4))
+title = 'Explained Variance Ratio by Top Factors'
+var_expl = pd.Series(pca.explained_variance_ratio_)
+var_expl.index += 1
+var_expl.iloc[:15].sort_values().plot.barh(title=title,
+                                           ax=axes[0])
+var_expl.cumsum().plot(ylim=(0, 1),
+                       ax=axes[1],
+                       title='Cumulative Explained Variance',
+                       xlim=(1, 300))
+axes[1].yaxis.set_major_formatter(FuncFormatter(lambda y, _: f'{y:.0%}'))
+sns.despine()
+fig.tight_layout()
+fig.savefig(plot_dataDir + 'PCA_Exp_Var_&_Cumulative_Exp_Var.png')
+
+'''
+It appears the most important factor explains well over 40% of the daily return variation.
+Furthermore, it looks like about 10 factors explain 80% of the returns in our cross section of 40 crypto coins.
+About 5 coins explain 60% of the returns. 
+Though the initial pool of coins was larger than 40 we dropped several due to lack of data.
+'''
+
+# Isolate the first 2 factors
+risk_factors = pd.DataFrame(pca.transform(returns_df)[:, :2],
+                            columns=['Principal Component 1', 'Principal Component 2'],
+                            index=returns_df.index)
+print(risk_factors.info())
+
+# Make sure the first 2 factors are really uncorrelated
+factor_corr_1_2 = risk_factors['Principal Component 1'].corr(risk_factors['Principal Component 2'])
+print(factor_corr_1_2)
+
+
+with sns.axes_style('white'):
+    risk_factors.plot(subplots=True,
+                      figsize=(14, 8),
+                      title=risk_factors.columns.tolist(),
+                      legend=False,
+                      rot=0,
+                      lw=1,
+                      xlim=(risk_factors.index.min(),
+                            risk_factors.index.max()))
+
+    sns.despine()
+    plt.tight_layout()
+    plt.savefig(plot_dataDir + 'Principle_component_volatillity.png')
