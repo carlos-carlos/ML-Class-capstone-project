@@ -64,7 +64,7 @@ close_df = close_df.resample('M').last()
 # Calculate lagged returns
 outlier_threshold = 0.01
 data = pd.DataFrame()
-lags = [1, 2, 3, 6, 9, 12]
+lags = [1, 2, 3, 6]
 
 # This block stacks the wide MDF to long formant while also:
 # Winsorizing outliers in the returns at the 1% and 99% levels
@@ -104,18 +104,19 @@ print(data.index.get_level_values('Coin').nunique())
 # And for differences between all periods and the most recent month returns
 
 # Most recent month and the rest
-for lag in [2,3,6,9,12]:
+for lag in [2,3,6]:
     data[f'momentum_{lag}'] = data[f'return_{lag}m'].sub(data.return_1m)
 
 # 3 and 12 month returns
-data["momentum_3_12"] = data["return_12m"].sub(data.return_3m)
+data["momentum_1_3"] = data["return_6m"].sub(data.return_3m)
 
 # Move historical returns up to current period so they can be used as features
-for t in range(1,7):
+for t in range(1,5):
     data[f'return_1m_t-{t}'] = data.groupby(level='Coin').return_1m.shift(t)
 
+#print(data.to_string())
 # Target forward returns for various holding periods, using the previous normalized returns
-for t in [1,2,3,6,12]:
+for t in [1,2,3,6]:
     data[f'target_{t}m'] = (data.groupby(level='Coin')
                             [f'return_{t}m'].shift(-t))
 
@@ -125,7 +126,7 @@ print(data.to_string())
 
 
 # Check return distributions
-for x in data.loc[:,:'return_12m'].columns:
+for x in data.loc[:,:'return_6m'].columns:
     print(x)
     sns_distPlot = sns.distplot(data[f'{x}'])
     sns.despine()
@@ -139,13 +140,6 @@ data['year'] = dates.year
 data['month'] = dates.month
 #print(dates)
 
+print(data.iloc[0:369].to_string())
+print(data.iloc[-369:-1].to_string())
 
-# Log-transform scatter plots
-log_trans_mdf = data
-X_all = log_trans_mdf.drop(log_trans_mdf.loc[:,:'return_1m_t-6'], axis=1)
-y = np.log(log_trans_mdf.loc[:,'target_1m':])
-
-mi_reg = pd.Series(mutual_info_regression(X_all, y),
-                   index=X_all.columns).sort_values(ascending=False)
-
-print(mi_reg.info())
