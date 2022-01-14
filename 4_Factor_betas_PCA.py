@@ -237,6 +237,7 @@ returns_df = returns_df.clip(lower=returns_df.quantile(q=.025),
                        upper=returns_df.quantile(q=.975),
                        axis=1)
 
+# Base pool of top 15 by Mcap, for measures the Eigenportfolio performance at the end of the script
 base_returns2 = returns_df
 
 # Normalize/Scale
