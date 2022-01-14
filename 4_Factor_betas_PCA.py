@@ -255,6 +255,7 @@ normed_returns_df = pd.DataFrame(scale(returns_df
 normed_returns_df = normed_returns_df.dropna(thresh=int(normed_returns_df.shape[0] * .95), axis=1)
 normed_returns_df = normed_returns_df.dropna(thresh=int(normed_returns_df.shape[1] * .95))
 
+# To compare against wieghted Eigenportfolios at the end of the script
 scaled_base_returns = normed_returns_df
 print(normed_returns_df.info())
 #print(normed_returns_df.to_string())
