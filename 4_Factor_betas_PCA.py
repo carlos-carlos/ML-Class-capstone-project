@@ -54,6 +54,9 @@ returns_df = returns_df.clip(lower=returns_df.quantile(q=.025),
 # Drop coins and adates that do not have complete data for 95%  of the time period
 returns_df = returns_df.dropna(thresh=int(returns_df.shape[0] * .95), axis=1)
 returns_df = returns_df.dropna(thresh=int(returns_df.shape[1] * .95))
+
+# Saved the returns as they are for comparison to Eigenportfolios at the end of the script
+base_returns = returns_df
 #print("After Dropping coins for missing data")
 #print(returns_df.info())
 
@@ -234,6 +237,8 @@ returns_df = returns_df.clip(lower=returns_df.quantile(q=.025),
                        upper=returns_df.quantile(q=.975),
                        axis=1)
 
+base_returns2 = returns_df
+
 # Normalize/Scale
 #new_df = pd.DataFrame(StandardScaler().fit_transform(df), columns=df.columns, index=df.index)
 normed_returns_df = pd.DataFrame(scale(returns_df
@@ -249,13 +254,58 @@ normed_returns_df = pd.DataFrame(scale(returns_df
 normed_returns_df = normed_returns_df.dropna(thresh=int(normed_returns_df.shape[0] * .95), axis=1)
 normed_returns_df = normed_returns_df.dropna(thresh=int(normed_returns_df.shape[1] * .95))
 
-
+scaled_base_returns = normed_returns_df
 print(normed_returns_df.info())
-print(normed_returns_df.to_string())
+#print(normed_returns_df.to_string())
 
+# Apply np.cov() to the normalized returns to see the strength of correlation among the coin returns
 cov = normed_returns_df.cov()
 covariance_map = sns.clustermap(cov)
 covariance_map.savefig(plot_dataDir + 'Top_15_Covariance_Cluster_map.png')
+
+# Feed the correlated returns to PCA and check which factors explain the most growth
+pca = PCA()
+pca = pca.fit(cov)
+exp_var15 = pd.Series(pca.explained_variance_ratio_).to_frame('Explained Variance')
+print(exp_var15.head().sum())
+print(exp_var15.head())
+
+# Normalize the four largest components PCA components so that they sum to 1
+# Prepare to use them as weights for portfolios to compare to an equal-weighted portfolio formed from all coins
+# In this case all the coins in the coin pool
+top4 = pd.DataFrame(pca.components_[:4], columns=cov.columns)
+eigen_portfolios = top4.div(top4.sum(1), axis=0)
+eigen_portfolios.index = [f'Portfolio {i}' for i in range(1, 5)]
+
+
+# Visualize the Eigenportfolio weights
+axes = eigen_portfolios.T.plot.bar(subplots=True,
+                                   layout=(2, 2),
+                                   figsize=(14, 8),
+                                   legend=False)
+for ax in axes.flatten():
+    ax.set_ylabel('Portfolio Weight')
+    ax.set_xlabel('')
+sns.despine()
+plt.tight_layout()
+plt.savefig(plot_dataDir + 'Eigenportfolio_weights.png')
+
+
+# Visualize the performance of the Eigenportfolios
+fig, axes = plt.subplots(nrows=2, ncols=2, figsize=(14, 6), sharex=True)
+axes = axes.flatten()
+base_returns.mean(1).add(1).cumprod().sub(1).plot(title='The Market', ax=axes[0])
+for i in range(3):
+    rc = base_returns.mul(eigen_portfolios.iloc[i]).sum(1).add(1).cumprod().sub(1)
+    rc.plot(title=f'Portfolio {i+1}', ax=axes[i+1], lw=1, rot=0)
+
+for i in range(4):
+    axes[i].set_xlabel('')
+sns.despine()
+fig.tight_layout()
+fig.savefig(plot_dataDir + 'Eigenportfolio_performance.png')
+
+
 
 
 
