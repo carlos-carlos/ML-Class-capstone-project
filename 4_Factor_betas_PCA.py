@@ -35,6 +35,8 @@ np.random.seed(42)
 
 # END GLOBAL SETTINGS
 
+# FINDING RISK FACTORS WITH PCA
+
 # Read in MDF with initial coin pool
 cpool_mdf = pd.read_csv(coin_dataDir + 'CoinPool.csv')
 cpool_mdf.rename(columns={'Unnamed: 0': 'Dates'}, inplace=True)
@@ -212,6 +214,8 @@ fig.tight_layout()
 fig.subplots_adjust(top=.90)
 fig.savefig(plot_dataDir + 'Principle_components_100_trials.png')
 
+
+# EIGENPORTFOLIO
 
 # Searching for a weights to weigh the coins in a future portfolio.
 # Visualizing the PCA factors in this way can also help decide which of the componenets to use
