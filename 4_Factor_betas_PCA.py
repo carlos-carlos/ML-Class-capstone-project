@@ -23,6 +23,8 @@ from pprint import pprint
 #coin_dataDir = 'DATA/TESTDIR/' # Debug dir for testing I/O logic and/or issues. It should be a clone of the above dir.
 coin_dataDir = 'DATA/COMBINEDDATA/'
 plot_dataDir = 'DATA/INITIAL_INSIGHTS/'
+riskFactor_dataDir = 'DATA/RISKFACTORS/'
+
 
 # Date ranges
 START = 2020
@@ -80,7 +82,7 @@ fitted_returns = pca.fit(returns_df)
 # The top Factors found by PCA can be used as the "Risk Factors" for our model instead of the FAMA-French Risk Factors
 fig, axes = plt.subplots(ncols=2, figsize=(14, 4))
 title = 'Explained Variance Ratio by Top Factors'
-var_expl = pd.Series(pca.explained_variance_ratio_)
+var_expl = pd.Series(fitted_returns.explained_variance_ratio_)
 var_expl.index += 1
 var_expl.iloc[:15].sort_values().plot.barh(title=title,
                                            ax=axes[0])
@@ -101,14 +103,12 @@ Though the initial pool of coins was larger than 40 we dropped several due to la
 '''
 
 # Isolate the first X factors
-risk_factors = pd.DataFrame(pca.transform(returns_df)[:, :7],
+risk_factors = pd.DataFrame(pca.transform(returns_df)[:, :6],
                             columns=['Principal Component 1', 'Principal Component 2','Principal Component 3',
-                                     'Principal Component 4', 'Principal Component 5','Principal Component 6',
-                                     'Principal Component 7'],
+                                     'Principal Component 4', 'Principal Component 5','Principal Component 6'],
                             index=returns_df.index)
 #print(risk_factors.info())
-
-
+risk_factors.to_csv(f'{riskFactor_dataDir}PCA_Risk_Factors.csv')
 
 # Verify factor correlation or non-correlation
 factor_corr_1_1 = risk_factors['Principal Component 1'].corr(risk_factors['Principal Component 1'])
@@ -117,14 +117,9 @@ factor_corr_1_3 = risk_factors['Principal Component 1'].corr(risk_factors['Princ
 factor_corr_1_4 = risk_factors['Principal Component 1'].corr(risk_factors['Principal Component 4'])
 factor_corr_1_5 = risk_factors['Principal Component 1'].corr(risk_factors['Principal Component 5'])
 factor_corr_1_6 = risk_factors['Principal Component 1'].corr(risk_factors['Principal Component 6'])
-factor_corr_1_7 = risk_factors['Principal Component 1'].corr(risk_factors['Principal Component 7'])
-
 factor_corr_2_3 = risk_factors['Principal Component 2'].corr(risk_factors['Principal Component 3'])
 factor_corr_2_4 = risk_factors['Principal Component 2'].corr(risk_factors['Principal Component 4'])
 factor_corr_2_5 = risk_factors['Principal Component 2'].corr(risk_factors['Principal Component 5'])
-
-
-
 
 print("Factor Correlations")
 print("Factors 1 & 1 " + str(factor_corr_1_1))
@@ -134,8 +129,6 @@ print("Factors 2 & 3 " + str(factor_corr_2_3))
 print("Factors 1 & 4 " + str(factor_corr_1_4))
 print("Factors 1 & 5 " + str(factor_corr_1_5))
 print("Factors 1 & 6 " + str(factor_corr_1_6))
-print("Factors 1 & 7 " + str(factor_corr_1_7))
-
 print("Factors 2 & 4 " + str(factor_corr_2_4))
 print("Factors 2 & 5 " + str(factor_corr_2_5))
 
