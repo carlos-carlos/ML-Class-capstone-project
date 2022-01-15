@@ -23,7 +23,7 @@ from pprint import pprint
 #coin_dataDir = 'DATA/TESTDIR/' # Debug dir for testing I/O logic and/or issues. It should be a clone of the above dir.
 coin_dataDir = 'DATA/COMBINEDDATA/'
 plot_dataDir = 'DATA/INITIAL_INSIGHTS/'
-riskFactor_dataDir = 'DATA/RISKFACTORS/'
+riskFactor_dataDir = 'DATA/RISKFACTORSDATA/'
 
 
 # Date ranges
