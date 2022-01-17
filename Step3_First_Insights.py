@@ -23,6 +23,10 @@ from pprint import pprint
 #coin_dataDir = 'DATA/TESTDIR/' # Debug dir for testing I/O logic and/or issues. It should be a clone of the above dir.
 coin_dataDir = 'DATA/COMBINEDDATA/'
 plot_dataDir = 'DATA/INITIAL_INSIGHTS/'
+model_dataDir = 'DATA/MODELDATA/'
+
+
+isdir = os.path.isdir(model_dataDir)
 
 # Date ranges
 START = 2020
@@ -142,7 +146,27 @@ prices_mdf['ADX'] = (prices_mdf
                      .groupby('Coin', group_keys=False)
                      .apply(compute_adx))
 
-print(prices_mdf.info())
+
+#Plus/Minus Directional Index
+def compute_diplus(coin_data):
+    real = talib.PLUS_DI(coin_data.High,
+                     coin_data.Low,
+                     coin_data.Close,
+                     timeperiod=14)
+
+    return real
+
+def compute_diminus(coin_data):
+    real = talib.MINUS_DI(coin_data.High,
+                     coin_data.Low,
+                     coin_data.Close,
+                     timeperiod=14)
+
+    return real
+
+prices_mdf["DI_PLUS"] = (prices_mdf.groupby('Coin', group_keys=False).apply(compute_diplus))
+prices_mdf["DI_MINUS"] = (prices_mdf.groupby('Coin', group_keys=False).apply(compute_diminus))
+
 
 # Compute Exponential Moving Averages (EMA)
 ema_periods = [9, 20, 50, 100, 200]
@@ -157,10 +181,59 @@ for p in ema_periods:
                            .groupby(level='Coin',group_keys=False)
                            .apply(compute_ema))
 
+# Compute lagged returns and Winsorize
+lags = [1, 7, 14, 30, 60, 90]
+q = 0.0001
 
-print(prices_mdf.info())
+for lag in lags:
+    prices_mdf[f'return_{lag}d'] = (prices_mdf.groupby(level='Coin').Close
+                                .pct_change(lag)
+                                .pipe(lambda x: x.clip(lower=x.quantile(q),
+                                                       upper=x.quantile(1 - q)))
+                                .add(1)
+                                .pow(1 / lag)
+                                .sub(1)
+                                )
+# Shift lagged returns
+for t in [1, 2, 3, 4, 5]:
+    for lag in [1, 7, 14, 30, 60, 90]:
+        prices_mdf[f'return_{lag}d_lag{t}'] = (prices_mdf.groupby(level='Coin')
+                                           [f'return_{lag}d'].shift(t * lag))
 
-# Visualize the distribution in the features
+# Generate target forward returns
+for t in [1, 7, 14, 30, 60, 90]:
+    prices_mdf[f'target_{t}d'] = prices_mdf.groupby(level='Coin')[f'return_{t}d'].shift(-t)
+
+# Create dummy time variables
+prices_mdf['year'] = prices_mdf.index.get_level_values('Dates').year
+prices_mdf['month'] = prices_mdf.index.get_level_values('Dates').month
+
+prices_mdf = pd.get_dummies(prices_mdf,
+                        columns=['year', 'month'],
+                        prefix=['year', 'month'],
+                        prefix_sep=['_', '_'],
+                        drop_first=True)
+
+print(prices_mdf.info(null_counts=True))
+
+# Save the model data
+if isdir == False:
+    os.makedirs(model_dataDir)
+    print("Directory '% s' created" % model_dataDir)
+    prices_mdf.to_csv(f'{model_dataDir}ModelData.csv')
+    print(f"The model data has been saved to {model_dataDir} as a MultiIndex dataframe")
+
+else:
+    prices_mdf.to_csv(f'{model_dataDir}ModelData.csv')
+    print(f"The model data has been saved to {model_dataDir} as a MultiIndex dataframe")
+
+# DATASET INSIGHTS AND VISUALIZATION PLOTS
+
+print("RETURNS PERCENTILES")
+returns = prices_mdf.groupby(level='Coin').Close.pct_change()
+percentiles=[.0001, .001, .01]
+percentiles+= [1-p for p in percentiles]
+print(returns.describe(percentiles=percentiles).iloc[2:].to_frame('percentiles'))
 
 # RSI distplot
 #RSI_ax = sns.distplot(prices_mdf.RSI.dropna())
@@ -170,7 +243,7 @@ print(prices_mdf.info())
 #plt.tight_layout()
 #plt.savefig(plot_dataDir + 'RSI Distribution with Signal Threshold.png')
 
-# Bollinger Bands displot
+# Bollinger Bands distplot
 prices_mdf['BB_high'] = prices_mdf.BB_high.sub(prices_mdf.Close).div(prices_mdf.BB_high).apply(np.log1p)
 prices_mdf['BB_low'] = prices_mdf.Close.sub(prices_mdf.BB_low).div(prices_mdf.Close).apply(np.log1p)
 
@@ -178,7 +251,6 @@ prices_mdf['BB_low'] = prices_mdf.Close.sub(prices_mdf.BB_low).div(prices_mdf.Cl
 #sns.distplot(prices_mdf.BB_low.dropna(), ax=axes[0])
 #sns.distplot(prices_mdf.BB_high.dropna(), ax=axes[1])
 #plt.tight_layout()
-
 #plt.savefig(plot_dataDir + 'Bollinger_Band_Distribution.png')
 
 # Average True Range
@@ -187,6 +259,7 @@ prices_mdf['BB_low'] = prices_mdf.Close.sub(prices_mdf.BB_low).div(prices_mdf.Cl
 #fig.savefig(plot_dataDir + 'ATR_Distribution.png')
 
 # MACD distribution
+print("MACD Percentiles")
 print(prices_mdf
       .MACD
       .describe(percentiles=[.001, .01, .02, .03, .04, .05, .95, .96, .97, .98, .99, .999])
@@ -195,24 +268,33 @@ print(prices_mdf
 #MACD_dist = sns.distplot(prices_mdf.MACD.dropna())
 #plt.savefig(plot_dataDir + 'MACD_Distribution.png')
 
-ADX_dist = sns.distplot(prices_mdf.ADX.dropna())
-ADX_dist.axvline(25, ls='--', lw=1, c='k')
-ADX_dist.axvline(50, ls='--', lw=1, c='k')
-ADX_dist.axvline(75, ls='--', lw=1, c='k')
+# ADX distribution plot
+#ADX_dist = sns.distplot(prices_mdf.ADX.dropna())
+#ADX_dist.axvline(25, ls='--', lw=1, c='k')
+#ADX_dist.axvline(50, ls='--', lw=1, c='k')
+#ADX_dist.axvline(75, ls='--', lw=1, c='k')
 
-ADX_dist.set_title('ADX Distribution with Signal Threshold')
-plt.savefig(plot_dataDir + 'ADX_Distribution.png')
+#ADX_dist.set_title('ADX Distribution with Signal Threshold')
+#plt.savefig(plot_dataDir + 'ADX_Distribution.png')
+
+# Stochastic Oscillator distplot
+print("STOCH percentiles")
+print(prices_mdf
+      .STOCH
+      .describe(percentiles=[.001, .01, .02, .03, .04, .05, .95, .96, .97, .98, .99, .999])
+      .apply(lambda x: f'{x:,.1f}'))
 
 
-'''
-def compute_ema(coin_data):
-    real = talib.EMA(coin_data.Close, timeperiod=20)
-    return real
 
-prices_mdf['EMA20'] = (prices_mdf
-                       .groupby(level='Coin',group_keys=False)
-                       .apply(compute_ema))
-'''
+#STOCH_ax = sns.distplot(prices_mdf.STOCH.dropna())
+#plt.savefig(plot_dataDir + 'STOCH Distribution with Signal Threshold.png')
+
+# Directional Indicators
+fig, axes = plt.subplots(ncols=2, figsize=(15, 5))
+sns.distplot(prices_mdf.DI_PLUS.dropna(), ax=axes[0])
+sns.distplot(prices_mdf.DI_MINUS.dropna(), ax=axes[1])
+plt.tight_layout()
+plt.savefig(plot_dataDir + 'Directional Indicators.png')
 
 
 '''
