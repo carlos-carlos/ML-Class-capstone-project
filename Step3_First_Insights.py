@@ -71,6 +71,7 @@ nobs = prices_mdf.groupby(level='Coin').size()
 keep = nobs[nobs > min_obs].index
 
 prices_mdf = prices_mdf.loc[idx[keep, :], :]
+print("After dropping coins with less than 2 years of data")
 print(prices_mdf.info())
 
 # These lines can be used to select coins based on volume from a greater pool if taken without the initial
