@@ -5,8 +5,7 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 import talib
 from sklearn.feature_selection import mutual_info_regression
-
-
+from scipy.stats import pearsonr, spearmanr
 
 import datetime
 import time
@@ -168,20 +167,6 @@ def compute_diminus(coin_data):
 prices_mdf["DI_PLUS"] = (prices_mdf.groupby('Coin', group_keys=False).apply(compute_diplus))
 prices_mdf["DI_MINUS"] = (prices_mdf.groupby('Coin', group_keys=False).apply(compute_diminus))
 
-
-# Compute Exponential Moving Averages (EMA)
-ema_periods = [9, 20, 50, 100, 200]
-
-for p in ema_periods:
-
-    def compute_ema(coin_data):
-        real = talib.EMA(coin_data.Close, timeperiod=p)
-        return real
-
-    prices_mdf[f'EMA{p}'] = (prices_mdf
-                           .groupby(level='Coin',group_keys=False)
-                           .apply(compute_ema))
-
 # Compute lagged returns and Winsorize
 lags = [1, 7, 14, 30, 60, 90]
 q = 0.0001
@@ -230,6 +215,119 @@ else:
 
 # DATASET INSIGHTS AND VISUALIZATION PLOTS
 
+# Correlation Cluster map of the Returns
+returns = prices_mdf.loc[:, 'return_1d':"return_90d"]
+#clusterMap = sns.clustermap(returns.corr('spearman'), annot=True, center=0, cmap='Blues')
+#clusterMap.savefig(plot_dataDir + 'Cluster_Spearman_Blue.png')
+
+print('Coins with Unique Values:')
+print(returns.index.get_level_values('Coin').nunique())
+
+# Check return distributions
+for x in returns.loc[:,:'return_90d'].columns:
+    sns_distPlot = sns.distplot(returns[f'{x}'])
+    fig = sns_distPlot.get_figure()
+    sns.despine()
+    fig.savefig(plot_dataDir + f'{x}Distplot.png')
+
+
+# Spearman Ranks and scatter plots for factors
+target = 'target_7d'
+price_copy = prices_mdf.copy()
+
+# Relative Strength Index (RSI)
+print("RSI FEATURE INFO")
+price_copy.loc[:, 'rsi_signal'] = pd.cut(price_copy.RSI, bins=[0, 30, 70, 100])
+print("RSI Distributions")
+print(price_copy.groupby('rsi_signal')['target_7d'].describe().to_string())
+
+metric = "RSI"
+df = price_copy[[metric, target]].dropna()
+r, p = spearmanr(df[metric], df[target])
+print("RSI Spearman")
+print(f'{r:,.2%} ({p:.2%})')
+j=sns.jointplot(x=df[metric], y=df[target], data=df)
+j.savefig(plot_dataDir + 'RSI_Scatter_Plot.png')
+
+# Average Directional Moving Index (ADX)
+print("ADX FEATURE INFO")
+price_copy.loc[:, 'adx_signal'] = pd.cut(price_copy.ADX, bins=[0, 25, 50, 75, 100])
+print("ADX Distributions")
+print(price_copy.groupby('adx_signal')['target_7d'].describe().to_string())
+
+metric = "ADX"
+df = price_copy[[metric, target]].dropna()
+r, p = spearmanr(df[metric], df[target])
+print("ADX Spearman")
+print(f'{r:,.2%} ({p:.2%})')
+j=sns.jointplot(x=df[metric], y=df[target], data=df)
+j.savefig(plot_dataDir + 'ADX_Scatter_Plot.png')
+
+# Directional Indices (DM+/-)
+metric = "DI_PLUS"
+df = price_copy[[metric, target]].dropna()
+r, p = spearmanr(df[metric], df[target])
+print("DI Plus Spearman")
+print(f'{r:,.2%} ({p:.2%})')
+j=sns.jointplot(x=df[metric], y=df[target], data=df)
+j.savefig(plot_dataDir + 'DI_PLUS_Scatter_Plot.png')
+
+metric = "DI_MINUS"
+df = price_copy[[metric, target]].dropna()
+r, p = spearmanr(df[metric], df[target])
+print("DI Minus Spearman")
+print(f'{r:,.2%} ({p:.2%})')
+j=sns.jointplot(x=df[metric], y=df[target], data=df)
+j.savefig(plot_dataDir + 'DI_MINUS_Scatter_Plot.png')
+
+
+# Bollinger Bands
+metric = 'BB_low'
+df = price_copy[[metric, target]].dropna()
+j=sns.jointplot(x=df[metric], y=df[target], data=df)
+j.savefig(plot_dataDir + 'BB_Low_Scatter_Plot.png')
+r, p = spearmanr(df[metric], df[target])
+print("Lower BB Spearman")
+print(f'{r:,.2%} ({p:.2%})')
+
+metric = 'BB_high'
+df = price_copy[[metric, target]].dropna()
+j=sns.jointplot(x=df[metric], y=df[target], data=df)
+j.savefig(plot_dataDir + 'BB_High_Scatter_Plot.png')
+r, p = spearmanr(df[metric], df[target])
+print("Upper BB Spearman")
+print(f'{r:,.2%} ({p:.2%})')
+
+# Active True Range (ATR)
+metric = 'ATR'
+j=sns.jointplot(x=metric, y=target, data=price_copy)
+j.savefig(plot_dataDir + 'ATR_Scatter_Plot.png')
+df = price_copy[[metric, target]].dropna()
+r, p = spearmanr(df[metric], df[target])
+print("ATR Spearman")
+print(f'{r:,.2%} ({p:.2%})')
+
+# Moving Average Convegeance Divergeance (MACD)
+metric = 'MACD'
+df = price_copy[[metric, target]].dropna()
+r, p = spearmanr(df[metric], df[target])
+print("MACD Spearman")
+print(f'{r:,.2%} ({p:.2%})')
+j=sns.jointplot(x=df[metric], y=df[target], data=df)
+j.savefig(plot_dataDir + 'MACD_Scatter_Plot.png')
+
+# Stochastic Oscillator
+metric = 'STOCH'
+df = price_copy[[metric, target]].dropna()
+r, p = spearmanr(df[metric], df[target])
+print("STOCH Spearman")
+print(f'{r:,.2%} ({p:.2%})')
+j=sns.jointplot(x=df[metric], y=df[target], data=df)
+j.savefig(plot_dataDir + 'STOCH_Scatter_Plot.png')
+
+
+'''
+# Distribution plots and statistics
 print("RETURNS PERCENTILES")
 returns = prices_mdf.groupby(level='Coin').Close.pct_change()
 percentiles=[.0001, .001, .01]
@@ -296,100 +394,20 @@ sns.distplot(prices_mdf.DI_PLUS.dropna(), ax=axes[0])
 sns.distplot(prices_mdf.DI_MINUS.dropna(), ax=axes[1])
 plt.tight_layout()
 plt.savefig(plot_dataDir + 'Directional Indicators.png')
+'''
 
 
 '''
-# Isolate the close prices
-close_df = cpool_mdf.loc[idx[str(START):str(END), :], 'Close'].unstack('Coin')
+# Compute Exponential Moving Averages (EMA)
+ema_periods = [9, 20, 50, 100, 200]
 
-# Optionally resamble the daily closes to monthly instead of daily data
-close_df = close_df.resample('M').last()
-#print(close_df.to_string())
+for p in ema_periods:
 
-# Calculate lagged returns
-outlier_threshold = 0.01
-data = pd.DataFrame()
-lags = [1, 2, 3, 6]
+    def compute_ema(coin_data):
+        real = talib.EMA(coin_data.Close, timeperiod=p)
+        return real
 
-# This block stacks the wide MDF to long formant while also:
-# Winsorizing outliers in the returns at the 1% and 99% levels
-# Capping outliers and the aforementioned levels
-# Normalize the returns via geometric mean
-# calculate lagged monthly returns for the periods above
-for lag in lags:
-    data[f'return_{lag}m'] = (close_df
-                           .pct_change(lag)
-                           .stack()
-                           .pipe(lambda x: x.clip(lower=x.quantile(outlier_threshold),
-                                                  upper=x.quantile(1-outlier_threshold)))
-                           .add(1)
-                           .pow(1/lag)
-                           .sub(1)
-                           )
-
-# Resulting in compunded daily returns for the six monthly periods in the lags list above
-data = data.swaplevel().dropna()
-
-# Drop coins with less than one year of returns
-min_obs = 12 # number of months
-nobs = data.groupby(level='Coin').size()
-keep = nobs[nobs>min_obs].index
-data = data.loc[idx[keep,:], :]
-#print(data.to_string())
-
-
-
-# Cluster map with Seaborn
-#clusterMap = sns.clustermap(data.corr('spearman'), annot=True, center=0, cmap='Blues')
-#clusterMap.savefig(plot_dataDir + 'Cluster_Spearman_Blue.png')
-
-print('Coins with Unique Values:')
-print(data.index.get_level_values('Coin').nunique())
-
-# Compute momentum factor based on difference between 3 and 12 month returns
-# And for differences between all periods and the most recent month returns
-
-# Most recent month and the rest
-for lag in [2,3,6]:
-    data[f'momentum_{lag}'] = data[f'return_{lag}m'].sub(data.return_1m)
-
-# Returns Momentum Factors
-data["momentum_1_6"] = data["return_6m"].sub(data.return_1m) # 6 minus 1 months
-data["momentum_1_3"] = data["return_3m"].sub(data.return_1m) # 3 minus 1 months
-data["momentum_3_6"] = data["return_6m"].sub(data.return_3m) # 6 minus 3 months
-
-# Move historical returns up to current period so they can be used as features
-for t in range(1,5):
-    data[f'return_1m_t-{t}'] = data.groupby(level='Coin').return_1m.shift(t)
-
-#print(data.to_string())
-# Target forward returns for various holding periods, using the previous normalized returns
-for t in [1,2,3,6]:
-    data[f'target_{t}m'] = (data.groupby(level='Coin')
-                            [f'return_{t}m'].shift(-t))
-
-print(data.info())
-print(data.describe())
-print(data.to_string())
-
-
-# Check return distributions
-for x in data.loc[:,:'return_6m'].columns:
-    print(x)
-    sns_distPlot = sns.distplot(data[f'{x}'])
-    sns.despine()
-    plt.savefig(plot_dataDir + f'{x}Distplot.png')
-
-
-
-# Adding time indicators
-dates = data.index.get_level_values('Dates')
-data['year'] = dates.year
-data['month'] = dates.month
-#print(dates)
-
-print(data.iloc[0:369].to_string())
-print(data.iloc[-369:-1].to_string())
-
-
+    prices_mdf[f'EMA{p}'] = (prices_mdf
+                           .groupby(level='Coin',group_keys=False)
+                           .apply(compute_ema))
 '''
