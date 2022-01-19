@@ -2,10 +2,13 @@ import numpy as np
 import pandas as pd
 import sklearn as skl
 import seaborn as sns
+import statsmodels.api as sm
 import matplotlib.pyplot as plt
 import talib
 from sklearn.feature_selection import mutual_info_regression
 from scipy.stats import pearsonr, spearmanr
+from statsmodels.regression.rolling import RollingOLS
+
 
 import datetime
 import time
@@ -23,6 +26,8 @@ from pprint import pprint
 coin_dataDir = 'DATA/COMBINEDDATA/'
 plot_dataDir = 'DATA/INITIAL_INSIGHTS/MOMENTUM_FACTORS'
 model_dataDir = 'DATA/MODELDATA/'
+riskFactor_dataDir = 'DATA/RISKFACTORSDATA/'
+
 
 
 isdir = os.path.isdir(model_dataDir)
@@ -73,13 +78,6 @@ prices_mdf = prices_mdf.loc[idx[keep, :], :]
 print("After dropping coins with less than 2 years of data")
 print(prices_mdf.info())
 
-# These lines can be used to select coins based on volume from a greater pool if taken without the initial
-# criteria I selected for the coins for this project
-# They limit the trading universe of coins based on volume for the last month
-#prices_mdf['Volume'] = prices_mdf[['Close', 'Volume']].prod(axis=1)
-#prices_mdf['Volume_1m'] = (prices.Volume.groupby('Coin')
-#                           .rolling(window=30, level='Dates')
-#                           .mean()).values
 
 # Compute Technical Analysis Indicators to be use as momentum alpha factors
 
@@ -200,7 +198,67 @@ prices_mdf = pd.get_dummies(prices_mdf,
                         prefix_sep=['_', '_'],
                         drop_first=True)
 
-print(prices_mdf.info(null_counts=True))
+
+# Read in PCA Risk Factors
+risk_factors_df = pd.read_csv(riskFactor_dataDir + 'PCA_Risk_Factors.csv')
+risk_factors_df.rename(columns={'Unnamed: 0': 'Dates'}, inplace=True)
+risk_factors_df['Dates'] = risk_factors_df['Dates'].astype('datetime64')
+risk_factors_df = risk_factors_df.set_index('Dates')
+risk_factors_df.drop(risk_factors_df.index[-1], inplace=True)
+
+# Combine them with daily returns
+daily_returns = prices_mdf.loc[:, 'return_1d':'return_90d']
+factor_betas = daily_returns.join(risk_factors_df).sort_index()
+
+# Get rid of the extra returns
+del factor_betas['return_7d']
+del factor_betas['return_14d']
+del factor_betas['return_30d']
+del factor_betas['return_60d']
+del factor_betas['return_90d']
+#print(factor_betas.info())
+
+# Compute the factor Betas
+T = 24
+betas = (factor_betas.groupby(level='Coin',
+                             group_keys=False)
+         .apply(lambda x: RollingOLS(endog=x.return_1d,
+                                     exog=sm.add_constant(x.drop('return_1d', axis=1)),
+                                     window=min(T, x.shape[0]-1))
+                .fit(params_only=True)
+                .params
+                .drop('const', axis=1)))
+
+
+factors = ['Principal Component 1', 'Principal Component 2', 'Principal Component 3',
+           'Principal Component 4', 'Principal Component 5', 'Principal Component 6']
+
+# Impute missing Betas
+betas = betas.loc[:, factors] = betas.groupby('Coin')[factors].apply(lambda x: x.fillna(x.mean()))
+#print(betas.head().to_string())
+#print(betas.info())
+
+print("Factos Betas:")
+print(betas.describe().join(betas.sum(1).describe().to_frame('total')))
+
+# Combine the Factor Betas with the rest of the model
+prices_mdf = (prices_mdf
+        .join(betas
+              .groupby(level='Coin')
+              .shift()))
+
+# Immpute the missing factor betas to fill things out
+prices_mdf.loc[:, factors] = prices_mdf.groupby('Coin')[factors].apply(lambda x: x.fillna(x.mean()))
+
+#print(prices_mdf.head().to_string())
+print(prices_mdf.info())
+
+
+
+# Plot correlation custermap of the Betas
+#cmap = sns.diverging_palette(10, 220, as_cmap=True)
+#beta_cmap = sns.clustermap(betas.corr(), annot=True, cmap=cmap, center=0)
+#beta_cmap.savefig(plot_dataDir + 'Factor_Betas_PC_Cmap.png')
 
 # Save the model data
 if isdir == False:
@@ -224,11 +282,11 @@ print('Coins with Unique Values:')
 print(returns.index.get_level_values('Coin').nunique())
 
 # Check return distributions
-for x in returns.loc[:,:'return_90d'].columns:
-    sns_distPlot = sns.distplot(returns[f'{x}'])
-    fig = sns_distPlot.get_figure()
-    sns.despine()
-    fig.savefig(plot_dataDir + f'{x}Distplot.png')
+#for x in returns.loc[:,:'return_90d'].columns:
+#    sns_distPlot = sns.distplot(returns[f'{x}'])
+#    fig = sns_distPlot.get_figure()
+#    sns.despine()
+#    fig.savefig(plot_dataDir + f'{x}Distplot.png')
 
 
 # Spearman Ranks and scatter plots for factors
