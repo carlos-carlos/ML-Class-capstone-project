@@ -22,7 +22,7 @@ from pprint import pprint
 # Data directories
 #coin_dataDir = 'DATA/TESTDIR/' # Debug dir for testing I/O logic and/or issues. It should be a clone of the above dir.
 coin_dataDir = 'DATA/COMBINEDDATA/'
-plot_dataDir = 'DATA/INITIAL_INSIGHTS/'
+plot_dataDir = 'DATA/INITIAL_INSIGHTS/PCA_FACTORS'
 riskFactor_dataDir = 'DATA/RISKFACTORSDATA/'
 
 
