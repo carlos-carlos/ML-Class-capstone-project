@@ -87,7 +87,7 @@ prices_mdf['RSI'] = prices_mdf.groupby(level='Coin').Close.apply(talib.RSI)
 # Bollinger Bands
 def compute_bb(close):
     high, mid, low = talib.BBANDS(close, timeperiod=20)
-    return pd.DataFrame({'BB_high': high, 'BB_mid':mid, 'BB_low': low}, index=close.index)
+    return pd.DataFrame({'BB_high': high, 'BB_low': low}, index=close.index)
 
 prices_mdf = (prices_mdf.join(prices_mdf
                       .groupby(level='Coin')
@@ -188,7 +188,7 @@ for t in [1, 2, 3, 4, 5]:
 for t in [1, 7, 14, 30, 60, 90]:
     prices_mdf[f'target_{t}d'] = prices_mdf.groupby(level='Coin')[f'return_{t}d'].shift(-t)
 
-# Create dummy time variables
+# Create dummy time variables. USe drop first to avoid creating multicollinearity.
 prices_mdf['year'] = prices_mdf.index.get_level_values('Dates').year
 prices_mdf['month'] = prices_mdf.index.get_level_values('Dates').month
 
