@@ -24,7 +24,7 @@ from pprint import pprint
 # Data directories
 #coin_dataDir = 'DATA/TESTDIR/' # Debug dir for testing I/O logic and/or issues. It should be a clone of the above dir.
 coin_dataDir = 'DATA/COMBINEDDATA/'
-plot_dataDir = 'DATA/INITIAL_INSIGHTS/MOMENTUM_FACTORS'
+plot_dataDir = 'DATA/INITIAL_INSIGHTS/MOMENTUM_FACTORS/'
 model_dataDir = 'DATA/MODELDATA/'
 riskFactor_dataDir = 'DATA/RISKFACTORSDATA/'
 
@@ -293,8 +293,68 @@ print(returns.index.get_level_values('Coin').nunique())
 target = 'target_7d'
 price_copy = prices_mdf.copy()
 
+# Daily Returns
+daily_target = "target_1d"
+metric = 'return_1d'
+j=sns.jointplot(x=metric, y=daily_target, data=price_copy)
+j.savefig(plot_dataDir + 'Daily_Returns.png')
+df = price_copy[[metric, daily_target]].dropna()
+r, p = spearmanr(df[metric], df[daily_target])
+print("Daily Returns Spearman")
+print(f'{r:,.2%} ({p:.2%})')
+
+# Weekly Returns
+daily_target = "target_7d"
+metric = 'return_7d'
+j=sns.jointplot(x=metric, y=daily_target, data=price_copy)
+j.savefig(plot_dataDir + 'Weekly_Returns.png')
+df = price_copy[[metric, daily_target]].dropna()
+r, p = spearmanr(df[metric], df[daily_target])
+print("Weekly Returns Spearman")
+print(f'{r:,.2%} ({p:.2%})')
+
+# Bi-Weekly Returns
+daily_target = "target_14d"
+metric = 'return_14d'
+j=sns.jointplot(x=metric, y=daily_target, data=price_copy)
+j.savefig(plot_dataDir + 'Bi-Weekly_Returns.png')
+df = price_copy[[metric, daily_target]].dropna()
+r, p = spearmanr(df[metric], df[daily_target])
+print("Bi-Weekly Returns Spearman")
+print(f'{r:,.2%} ({p:.2%})')
+
+# Monthly Returns
+daily_target = "target_30d"
+metric = 'return_30d'
+j=sns.jointplot(x=metric, y=daily_target, data=price_copy)
+j.savefig(plot_dataDir + 'Monthly_Returns.png')
+df = price_copy[[metric, daily_target]].dropna()
+r, p = spearmanr(df[metric], df[daily_target])
+print("Monthly Returns Spearman")
+print(f'{r:,.2%} ({p:.2%})')
+
+# Bi-Monthly Returns
+daily_target = "target_60d"
+metric = 'return_60d'
+j=sns.jointplot(x=metric, y=daily_target, data=price_copy)
+j.savefig(plot_dataDir + 'Bi-Monthly_Returns.png')
+df = price_copy[[metric, daily_target]].dropna()
+r, p = spearmanr(df[metric], df[daily_target])
+print("Bi-Monthly Returns Spearman")
+print(f'{r:,.2%} ({p:.2%})')
+
+# Three Month Returns
+daily_target = "target_90d"
+metric = 'return_90d'
+j=sns.jointplot(x=metric, y=daily_target, data=price_copy)
+j.savefig(plot_dataDir + 'Three_Month_Returns.png')
+df = price_copy[[metric, daily_target]].dropna()
+r, p = spearmanr(df[metric], df[daily_target])
+print("Three Month Returns Spearman")
+print(f'{r:,.2%} ({p:.2%})')
+
 # Relative Strength Index (RSI)
-print("RSI FEATURE INFO")
+print("Daily RETURNS FEATURE INFO")
 price_copy.loc[:, 'rsi_signal'] = pd.cut(price_copy.RSI, bins=[0, 30, 70, 100])
 print("RSI Distributions")
 print(price_copy.groupby('rsi_signal')['target_7d'].describe().to_string())
@@ -384,7 +444,7 @@ j=sns.jointplot(x=df[metric], y=df[target], data=df)
 j.savefig(plot_dataDir + 'STOCH_Scatter_Plot.png')
 
 
-'''
+
 # Distribution plots and statistics
 print("RETURNS PERCENTILES")
 returns = prices_mdf.groupby(level='Coin').Close.pct_change()
@@ -392,6 +452,7 @@ percentiles=[.0001, .001, .01]
 percentiles+= [1-p for p in percentiles]
 print(returns.describe(percentiles=percentiles).iloc[2:].to_frame('percentiles'))
 
+'''
 # RSI distplot
 #RSI_ax = sns.distplot(prices_mdf.RSI.dropna())
 #RSI_ax.axvline(30, ls='--', lw=1, c='k')
