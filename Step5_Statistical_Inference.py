@@ -13,6 +13,8 @@ import matplotlib.pyplot as plt
 
 #coin_dataDir = 'DATA/TESTDIR/' # Debug dir for testing I/O logic and/or issues. It should be a clone of the above dir.
 model_dataDir = 'DATA/MODELDATA/'
+plot_dataDir = 'DATA/INITIAL_INSIGHTS/MOMENTUM_FACTORS/STATINFER/'
+
 
 # Helpers
 idx = pd.IndexSlice
@@ -37,3 +39,20 @@ data = (model_mdf
 print(data.info(show_counts=True))
 
 # Ready the data for the model
+y = data.filter(like='target')
+X = data.drop(y.columns, axis=1)
+
+print(X.info(show_counts=True))
+print(y.info(show_counts=True))
+
+#check_nan = X.isnull().values.any()
+#print(check_nan)
+
+# Clustermap Divergence Pallete
+j = sns.clustermap(y.corr(), cmap=sns.diverging_palette(h_neg=20, h_pos=220), center=0, annot=True, fmt='.2%')
+j.savefig(plot_dataDir + 'Returns_Divergence_ClusterMap.png')
+
+
+j = sns.clustermap(X.corr(), cmap=sns.diverging_palette(h_neg=20, h_pos=220), center=0)
+j.gcf().set_size_inches((14, 14))
+j.savefig(plot_dataDir + 'Features_Divergence_ClusterMap.png')
