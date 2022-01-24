@@ -44,10 +44,12 @@ X = data.drop(y.columns, axis=1)
 
 X.loc[:, 'year_2021':'month_12'] = X.loc[:, 'year_2021':'month_12'].astype('uint8')
 #print(X.info(show_counts=True))
-
 #print(y.info(show_counts=True))
 
 '''
+# This is just troubleshooting code to debug issues with sns.clustermap and one-hot encoded data for the time factors
+# Will be removed once the issue is fixed.
+
 check_nan = X.isnull().values.any()
 #print(check_nan)
 #print(X.eq('NaN').values.any())
