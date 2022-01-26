@@ -104,7 +104,7 @@ class MultipleTimeSeriesCV:
         return self.n_splits
 
 # Set the periods of time for training, testing, and the total base data periods for the pairs.
-train_period_length = 60
+train_period_length = 30
 test_period_length = 7
 n_splits = int(2 * YEAR/test_period_length)
 lookahead = 1
