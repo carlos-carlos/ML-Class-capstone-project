@@ -36,6 +36,22 @@ model_mdf.rename(columns={'Unnamed: 0': 'Dates'}, inplace=True)
 model_mdf['Dates'] = pd.to_datetime(model_mdf['Dates'])
 model_mdf.set_index(['Dates', 'Coin'], inplace=True)
 
+# Filter out 60 and 90d columns
+# Reason: Due to the relativly small size of the dataset, all the NaN values leave me with just 3 months of usable data.
+# I could impute the NaNs but for such long time periods, I think this is too risky and could lead to false models
+ninety_day_filter = model_mdf.filter(like='90d')
+model_mdf = model_mdf.drop(ninety_day_filter.columns, axis=1)
+sixty_day_filter = model_mdf.filter(like='60d')
+model_mdf = model_mdf.drop(sixty_day_filter.columns, axis=1)
+
+# Impute missing entries in the remaining data (max 30d period seems reasonable)
+model_mdf = model_mdf.groupby('Coin').apply(lambda x: x.fillna(x.mean()))
+#print(model_mdf.columns)
+#print(model_mdf.to_string())
+#print(len(model_mdf.columns))
+
+#input('pause')
+
 # Drop NaNs, OHLCV columns and lag period columns
 data = model_mdf
 
@@ -44,8 +60,9 @@ data = (model_mdf
             .drop(['Open', 'Close', 'Low', 'High', 'Volume'], axis=1))
 
 data = data.drop([c for c in data.columns if 'lag' in c], axis=1)
-
 #print(data.info(null_counts=True))
+#print(data.to_string())
+#input('pause')
 
 
 y = data.filter(like='target')
@@ -114,7 +131,7 @@ cv = MultipleTimeSeriesCV(n_splits=n_splits,
                           lookahead=lookahead,
                           train_period_length=train_period_length)
 
-# Check if it worked
+# Check if it worked, print out x number of train/test pairs
 i = 0
 for train_idx, test_idx in cv.split(X=data):
     train = data.iloc[train_idx]
@@ -129,5 +146,5 @@ for train_idx, test_idx in cv.split(X=data):
           test.groupby(level='Coin').size().value_counts().index[0],
           test_dates.min().date(), test_dates.max().date())
     i += 1
-    if i == 10:
+    if i == 60:
         break
