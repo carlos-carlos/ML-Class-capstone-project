@@ -251,8 +251,12 @@ prices_mdf = (prices_mdf
 prices_mdf.loc[:, factors] = prices_mdf.groupby('Coin')[factors].apply(lambda x: x.fillna(x.mean()))
 
 #print(prices_mdf.head().to_string())
-print(prices_mdf.info())
+#print(prices_mdf.info())
+print(prices_mdf.to_string())
+print(prices_mdf.columns)
 
+
+prices_mdf.to_hdf(f'{model_dataDir}model_data.h5', 'model_data')
 
 
 # Plot correlation custermap of the Betas
