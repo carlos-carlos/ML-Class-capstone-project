@@ -30,6 +30,46 @@ idx = pd.IndexSlice
 
 # END GLOBAL SETTINGS
 
+# HELPER FUNCTIONS
+
+# Prediction vs Actual Scatter Plot
+def plot_preds_scatter(df, ticker=None):
+    if ticker is not None:
+        idx = pd.IndexSlice
+        df = df.loc[idx[ticker, :], :]
+    j = sns.jointplot(x='predicted', y='actuals',
+                      robust=True, ci=None,
+                      line_kws={'lw': 1, 'color': 'k'},
+                      scatter_kws={'s': 1},
+                      data=df,
+                      kind='reg')
+    j.ax_joint.yaxis.set_major_formatter(
+        FuncFormatter(lambda y, _: '{:.1%}'.format(y)))
+    j.ax_joint.xaxis.set_major_formatter(
+        FuncFormatter(lambda x, _: '{:.1%}'.format(x)))
+    j.ax_joint.set_xlabel('Predicted')
+    j.ax_joint.set_ylabel('Actuals')
+
+# Daily Information Coefficient Distribution
+def plot_ic_distribution(df, ax=None):
+    if ax is not None:
+        sns.distplot(df.ic, ax=ax)
+    else:
+        ax = sns.distplot(df.ic)
+    mean, median = df.ic.mean(), df.ic.median()
+    ax.axvline(0, lw=1, ls='--', c='k')
+    ax.text(x=.05, y=.9,
+            s=f'Mean: {mean:8.2f}\nMedian: {median:5.2f}',
+            horizontalalignment='left',
+            verticalalignment='center',
+            transform=ax.transAxes)
+    ax.set_xlabel('Information Coefficient')
+    sns.despine()
+    plt.tight_layout()
+
+# END HELPER FUNCTIONS
+
+
 # Read in MDF with initial coin pool
 model_mdf = pd.read_csv(model_dataDir + 'ModelData.csv')
 model_mdf.rename(columns={'Unnamed: 0': 'Dates'}, inplace=True)
@@ -120,12 +160,14 @@ class MultipleTimeSeriesCV:
     def get_n_splits(self, X, y, groups=None):
         return self.n_splits
 
+
 # Set the periods of time for training, testing, and the total base data periods for the pairs.
 train_period_length = 30
 test_period_length = 7
 n_splits = int(2 * YEAR/test_period_length)
 lookahead = 1
 
+# Create some train test splits to check
 cv = MultipleTimeSeriesCV(n_splits=n_splits,
                           test_period_length=test_period_length,
                           lookahead=lookahead,
@@ -148,3 +190,5 @@ for train_idx, test_idx in cv.split(X=data):
     i += 1
     if i == 60:
         break
+
+# LINEAR REGRESSION MODELING
