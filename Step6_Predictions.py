@@ -68,6 +68,26 @@ def plot_ic_distribution(df, ax=None):
     sns.despine()
     plt.tight_layout()
 
+# Daily Rolling IC
+def plot_rolling_ic(df):
+    fig, axes = plt.subplots(nrows=2, sharex=True, figsize=(14, 8))
+    rolling_result = df.sort_index().rolling(21).mean().dropna()
+    mean_ic = df.ic.mean()
+    rolling_result.ic.plot(ax=axes[0],
+                           title=f'Information Coefficient (Mean: {mean_ic:.2f})',
+                           lw=1)
+    axes[0].axhline(0, lw=.5, ls='-', color='k')
+    axes[0].axhline(mean_ic, lw=1, ls='--', color='k')
+
+    mean_rmse = df.rmse.mean()
+    rolling_result.rmse.plot(ax=axes[1],
+                             title=f'Root Mean Squared Error (Mean: {mean_rmse:.2%})',
+                             lw=1,
+                             ylim=(0, df.rmse.max()))
+    axes[1].axhline(df.rmse.mean(), lw=1, ls='--', color='k')
+    sns.despine()
+    plt.tight_layout()
+
 # END HELPER FUNCTIONS
 
 
@@ -272,4 +292,5 @@ print(lr_predictions.info())
 lr_r, lr_p = spearmanr(lr_predictions.actuals, lr_predictions.predicted)
 print(f'Information Coefficient (overall): {lr_r:.3%} (p-value: {lr_p:.4%})')
 scatter = plot_preds_scatter(lr_predictions)
+
 #scatter.savefig(model_plot_dataDir + 'Prediction_VS_Actuals_Scatter.png')
