@@ -143,7 +143,7 @@ X = data.drop(y.columns, axis=1)
 
 class MultipleTimeSeriesCV:
     """Generates tuples of train_idx, test_idx pairs
-    Assumes the MultiIndex contains levels 'symbol' and 'date'
+    Assumes the MultiIndex contains levels 'Coin' and 'Dates'
     purges overlapping outcomes"""
 
     def __init__(self,
