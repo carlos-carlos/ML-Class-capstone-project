@@ -50,6 +50,7 @@ def plot_preds_scatter(df, ticker=None):
         FuncFormatter(lambda x, _: '{:.1%}'.format(x)))
     j.ax_joint.set_xlabel('Predicted')
     j.ax_joint.set_ylabel('Actuals')
+    j.savefig(model_plot_dataDir + 'Prediction_VS_Actuals_Scatter.png')
 
 # Daily Information Coefficient Distribution
 def plot_ic_distribution(df, ax=None):
@@ -67,6 +68,7 @@ def plot_ic_distribution(df, ax=None):
     ax.set_xlabel('Information Coefficient')
     sns.despine()
     plt.tight_layout()
+    plt.savefig(model_plot_dataDir + 'IC_Distribution.png')
 
 # Daily Rolling IC
 def plot_rolling_ic(df):
@@ -87,6 +89,7 @@ def plot_rolling_ic(df):
     axes[1].axhline(df.rmse.mean(), lw=1, ls='--', color='k')
     sns.despine()
     plt.tight_layout()
+    fig.savefig(model_plot_dataDir + 'IC_Daily_Rolling.png')
 
 # END HELPER FUNCTIONS
 
@@ -291,6 +294,7 @@ print(lr_predictions.info())
 # Evaluation
 lr_r, lr_p = spearmanr(lr_predictions.actuals, lr_predictions.predicted)
 print(f'Information Coefficient (overall): {lr_r:.3%} (p-value: {lr_p:.4%})')
-scatter = plot_preds_scatter(lr_predictions)
 
-#scatter.savefig(model_plot_dataDir + 'Prediction_VS_Actuals_Scatter.png')
+#scatter = plot_preds_scatter(lr_predictions)
+distribution = plot_ic_distribution(lr_scores)
+rolling = plot_rolling_ic(lr_scores)
