@@ -161,7 +161,7 @@ class MultipleTimeSeriesCV:
     def get_n_splits(self, X, y, groups=None):
         return self.n_splits
 
-'''
+
 # Set the periods of time for training, testing, and the total base data periods for the pairs.
 train_period_length = 30
 test_period_length = 7
@@ -191,7 +191,7 @@ for train_idx, test_idx in cv.split(X=data):
     i += 1
     if i == 60:
         break
-'''
+
 # LINEAR REGRESSION MODELING
 
 # Cross Validation
