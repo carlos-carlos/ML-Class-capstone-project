@@ -20,6 +20,7 @@ from matplotlib.ticker import FuncFormatter
 #coin_dataDir = 'DATA/TESTDIR/' # Debug dir for testing I/O logic and/or issues. It should be a clone of the above dir.
 model_dataDir = 'DATA/MODELDATA/'
 plot_dataDir = 'DATA/INITIAL_INSIGHTS/MOMENTUM_FACTORS/STATINFER/'
+model_plot_dataDir = 'DATA/MODELRESULTS/'
 
 # Time periods settings
 YEAR = 365
@@ -160,7 +161,7 @@ class MultipleTimeSeriesCV:
     def get_n_splits(self, X, y, groups=None):
         return self.n_splits
 
-
+'''
 # Set the periods of time for training, testing, and the total base data periods for the pairs.
 train_period_length = 30
 test_period_length = 7
@@ -190,5 +191,85 @@ for train_idx, test_idx in cv.split(X=data):
     i += 1
     if i == 60:
         break
-
+'''
 # LINEAR REGRESSION MODELING
+
+# Cross Validation
+train_period_length = 30
+test_period_length = 7
+n_splits = int(2 * YEAR / test_period_length)
+lookahead = 1
+
+cv = MultipleTimeSeriesCV(n_splits=n_splits,
+                          test_period_length=test_period_length,
+                          lookahead=lookahead,
+                          train_period_length=train_period_length)
+
+
+target = f'target_{lookahead}d'
+lr_predictions, lr_scores = [], []
+lr = LinearRegression()
+
+i = 0
+try:
+    for i, (train_idx, test_idx) in enumerate(cv.split(X), 1):
+        i += 1
+        print(i)
+        print('___')
+
+        X_train, y_train, = X.iloc[train_idx], y[target].iloc[train_idx]
+        X_test, y_test = X.iloc[test_idx], y[target].iloc[test_idx]
+
+        X_train_dates = X_train.index.get_level_values('Dates')
+        y_train_dates = y_train.index.get_level_values('Dates')
+        X_test_dates = X_test.index.get_level_values('Dates')
+        y_test_dates = y_test.index.get_level_values('Dates')
+
+        print(X_train.groupby(level='Coin').size().value_counts().index[0],
+              X_train_dates.min().date(), X_train_dates.max().date(),
+              y_train.groupby(level='Coin').size().value_counts().index[0],
+              X_test_dates.min().date(), X_test_dates.max().date(),
+              X_test.groupby(level='Coin').size().value_counts().index[0],
+              y_train_dates.min().date(), y_train_dates.max().date(),
+              y_test.groupby(level='Coin').size().value_counts().index[0],
+              y_test_dates.min().date(), y_test_dates.max().date())
+
+
+        lr.fit(X=X_train, y=y_train)
+        y_pred = lr.predict(X_test)
+
+        preds = y_test.to_frame('actuals').assign(predicted=y_pred)
+        preds_by_day = preds.groupby(level='Dates')
+        scores = pd.concat([preds_by_day.apply(lambda x: spearmanr(x.predicted,
+                                                                   x.actuals)[0] * 100)
+                            .to_frame('ic'),
+                            preds_by_day.apply(lambda x: np.sqrt(mean_squared_error(y_pred=x.predicted,
+                                                                                    y_true=x.actuals)))
+                            .to_frame('rmse')], axis=1)
+
+        lr_scores.append(scores)
+        lr_predictions.append(preds)
+
+
+except IndexError:
+    print('Ran out of data for train/test splits')
+
+
+lr_scores = pd.concat(lr_scores)
+lr_predictions = pd.concat(lr_predictions)
+print(lr_scores.info())
+print(lr_predictions.info())
+
+# Save results
+lr_scores.to_hdf(f'{model_dataDir}lr_model_scores.h5', 'lr/scores')
+lr_predictions.to_hdf(f'{model_dataDir}lr_model_predictions.h5', 'lr/predictions')
+lr_scores = pd.read_hdf(f'{model_dataDir}lr_model_scores.h5', 'lr/scores')
+lr_predictions = pd.read_hdf(f'{model_dataDir}lr_model_predictions.h5', 'lr/predictions')
+print(lr_scores.info())
+print(lr_predictions.info())
+
+# Evaluation
+lr_r, lr_p = spearmanr(lr_predictions.actuals, lr_predictions.predicted)
+print(f'Information Coefficient (overall): {lr_r:.3%} (p-value: {lr_p:.4%})')
+scatter = plot_preds_scatter(lr_predictions)
+#scatter.savefig(model_plot_dataDir + 'Prediction_VS_Actuals_Scatter.png')
