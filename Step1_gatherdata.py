@@ -54,7 +54,7 @@ for coin in data:
         data.remove(coin)
 
 # Drop stablecoins because its like having fiat in the data pool
-stablecoins = ['usdt','busd',"ust",'mim','frax','tusd','usdc','dai']
+stablecoins = ['usdt','busd',"ust",'mim','frax','tusd','usdc','dai','usdp']
 
 for coin in data:
     for sc in stablecoins:
@@ -64,6 +64,18 @@ for coin in data:
 # Drop wrapped btc ERC20 Token, because its like having BTCx2 in the data pool
 for coin in data:
     if 'wbtc' in coin['symbol']:
+        data.remove(coin)
+
+
+# Drop Huobi btc ERC20 Token, because its like having BTCx2 in the data pool
+for coin in data:
+    if 'hbtc' in coin['symbol']:
+        data.remove(coin)
+
+
+# Drop Lido Staked Ether because its 1:1 pegged to ETH
+for coin in data:
+    if 'steth' in coin['symbol']:
         data.remove(coin)
 
 print('Coin pool after initial criteria')
