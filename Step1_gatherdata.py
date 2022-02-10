@@ -53,40 +53,40 @@ print(len(data))
 #    if int(coin['total_volume']) < 100000000:
 #        data.remove(coin)
 
-# Drop stablecoins because its like having fiat in the data pool
+# Drop stablecoins and wrappers
 stablecoins = ['usdt','busd',"ust",'mim','frax','tusd','usdc','dai','usdp']
+wrappercoins = ['wbtc','hbtc','steth']
 
 for coin in data:
     for sc in stablecoins:
         if sc in coin['symbol']:
             data.remove(coin)
 
-# Drop wrapped btc ERC20 Token, because its like having BTCx2 in the data pool
 for coin in data:
-    if 'wbtc' in coin['symbol']:
+    for w in wrappercoins:
+        if w in coin['symbol']:
+            data.remove(coin)
+
+# Special check for Dai and mim because the above does not remove it for some reason
+for coin in data:
+    if coin['name'] == 'Dai':
         data.remove(coin)
 
-
-# Drop Huobi btc ERC20 Token, because its like having BTCx2 in the data pool
 for coin in data:
-    if 'hbtc' in coin['symbol']:
+    if coin['name'] == 'Magic Internet Money':
         data.remove(coin)
 
-
-# Drop Lido Staked Ether because its 1:1 pegged to ETH
-for coin in data:
-    if 'steth' in coin['symbol']:
-        data.remove(coin)
-
-print('Coin pool after initial criteria')
+print('Number of coins to be in the Initial Pool:')
 print(len(data))
 #pprint(data)
 
-# Coins with a Mcap over USD 2 Billion and 24hr trade volume of over USD 100 Million
+# Coins in the initial pool and their ticker symbol
 coinpool = [coin['id'] for coin in data]
 tickers = [coin['symbol'].upper() for coin in data]
-print(coinpool)
-print(tickers)
+#pprint(coinpool)
+#pprint(tickers)
+input("Hit ENTER to proceed")
+
 
 # Custom function for getting Coingecko OHLCV data broken down by hour
 def datagrabber(coin, fiat, start, end, ninetyDayPeriods):
