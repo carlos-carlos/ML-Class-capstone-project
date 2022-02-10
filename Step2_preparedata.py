@@ -45,9 +45,16 @@ idx = pd.IndexSlice
 
 # END GLOBAL SETTINGS
 
-
+# FUNCTIONS
 # Updater function
 def update_data(coin,fiat,start,end):
+    '''
+    :param coin: Str: Cryptocoin name
+    :param fiat: Str: USD,GBP,EUR,JPY etc..
+    :param start: UNIX timestamp in str form
+    :param end: UNIX timestamp in str form
+    :return: The original data with new days added from the most recent date to yesterday
+    '''
 
     # API call for minutely data for the present day
     try:
@@ -102,13 +109,36 @@ def update_data(coin,fiat,start,end):
 
     return todays_ohlc_df
 
+# Filter function
+def filterdata(mdf, rule, window, threshold):
+    '''
+    :param mdf: A MultiIndex DataFrame
+    :param rule: Str 'Market Cap' or 'Volume'
+    :param window: Int: the window for the rolling mean to compare against threshold
+    :param threshold: Int: The cutoff to decide what gets filtered
+    :return: MultiIndex Dataframe filtered by the abpve
+    '''
+    filtered = []
+    for coin, new_df in mdf.groupby(level=1):
+        if new_df.set_index(new_df.index.get_level_values('Dates'))[f'{rule}'].rolling(window).mean().mean() > threshold:
+            filtered.append(new_df)
+
+    mdf = pd.concat(filtered)
+    mdf.sort_index(inplace=True)
+
+    return mdf
+
+# END FUNCTIONS
+
 # START UPDATE LOGIC
 
 # Decide each time whether to update the data or use the existing local data
 # Might want to do this if offline or if you are debugging and don't want to slam the API each time you run the script.
 print('Would you like to update the local data?')
 should_update = input('Enter "y" if YES. Enter anything else or nothing if NO').lower()
+should_filter = input('Enter "y" if YES. Enter anything else or nothing if NO').lower()
 
+# If you update the data
 if should_update == 'y':
     # Get and prepare the existing data for the update
     dir_list = os.listdir(coin_dataDir)
@@ -170,9 +200,14 @@ if should_update == 'y':
 
     # Sort index
     coin_mdf.sort_index(inplace=True)
-    print(coin_mdf.to_string())
+    #print(coin_mdf.to_string())
     #print(coin_mdf.loc[('2022-01-02', 'bitcoin')]['Close'])
     #print(coin_mdf.index)
+    if should_filter == 'y':
+        coin_mdf = filterdata(coin_mdf, 'Market Cap', 180, 10000000000)
+
+    #print(coin_mdf.to_string())
+
 
     # Saves the Coin MDF to a file
     dataDir = coinMDF_dataDir
@@ -189,8 +224,8 @@ if should_update == 'y':
         coin_mdf.to_csv(f'{coinMDF_dataDir}CoinPool.csv')
         print(f"The initial pool of coins has been saved to {coinMDF_dataDir} as a MultiIndex dataframe")
 
+# If you do not update the data
 else:
-
     # Read in the data csvs into Pandas
     dir_list = os.listdir(coin_dataDir)
     coins = [x.split('.')[0] for x in dir_list]
@@ -215,10 +250,14 @@ else:
 
     # Sort index
     coin_mdf.sort_index(inplace=True)
-    print(coin_mdf.to_string())
+    #print(coin_mdf.to_string())
     #print(coin_mdf.loc[('2022-01-02', 'bitcoin')]['Close'])
     #print(coin_mdf.index)
 
+    if should_filter == 'y':
+        coin_mdf = filterdata(coin_mdf, 'Market Cap', 180, 10000000000)
+
+    #print(coin_mdf.to_string())
 
     # Saves the Coin MDF to a file
     dataDir = coinMDF_dataDir
