@@ -44,14 +44,14 @@ print('Starting coin pool')
 print(len(data))
 
 # Drop coins with less than 2 Billion Market cap
-for coin in data:
-    if int(coin['market_cap']) < 2000000000:
-        data.remove(coin)
+#for coin in data:
+#    if int(coin['market_cap']) < 2000000000:
+#        data.remove(coin)
 
 # Drop less than 100 Million 24hr Volume (USD)
-for coin in data:
-    if int(coin['total_volume']) < 100000000:
-        data.remove(coin)
+#for coin in data:
+#    if int(coin['total_volume']) < 100000000:
+#        data.remove(coin)
 
 # Drop stablecoins because its like having fiat in the data pool
 stablecoins = ['usdt','busd',"ust",'mim','frax','tusd','usdc','dai','usdp']
