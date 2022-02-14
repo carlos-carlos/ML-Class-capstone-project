@@ -123,6 +123,7 @@ def filterdata(mdf, rule, window, threshold):
         if new_df.set_index(new_df.index.get_level_values('Dates'))[f'{rule}'].rolling(window).mean().mean() > threshold:
             filtered.append(new_df)
 
+    print(f"Coins after filter {str(len(filtered))}")
     mdf = pd.concat(filtered)
     mdf.sort_index(inplace=True)
 
@@ -136,6 +137,7 @@ def filterdata(mdf, rule, window, threshold):
 # Might want to do this if offline or if you are debugging and don't want to slam the API each time you run the script.
 print('Would you like to update the local data?')
 should_update = input('Enter "y" if YES. Enter anything else or nothing if NO').lower()
+print('Would you like to filter the local data?')
 should_filter = input('Enter "y" if YES. Enter anything else or nothing if NO').lower()
 
 # If you update the data
@@ -275,3 +277,5 @@ else:
         print(f"The initial pool of coins has been saved to {coinMDF_dataDir} as a MultiIndex dataframe")
 
 
+#TODO:Add check to do multiple update API calls based on the most recent date in the data , if longer then 90 days
+#TODO: Maje it easier to decide the rule and threshold for the filter function
