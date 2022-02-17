@@ -90,13 +90,13 @@ input("Hit ENTER to proceed")
 
 
 # Custom function for getting Coingecko OHLCV data broken down by hour
-def datagrabber(coin, fiat, start, end, ninetyDayPeriods):
+def datagrabber(coin, fiat, start, end, ninety_day_periods):
     '''
     :param coin: name of cryptocoin according to coin 'id' on CoinGecko
     :param fiat:  name of a "regular" currency i.e. usd, eur, gbp and so on
     :param start: unix timestamp
     :param end: unix timestamp
-    :param ninetyDayPeriods: number of 90 day periods. 90 is the maximum days that you can get hourly data for
+    :param ninety_day_periods: number of 90 day periods. 90 is the maximum days that you can get hourly data for
     :return: A data frame of hourly OHLCV data for a cryptocoin(s)
     '''
 
@@ -150,8 +150,8 @@ def datagrabber(coin, fiat, start, end, ninetyDayPeriods):
     df_list = [todays_ohlc_df]
 
 
-    while ninetyDayPeriods > 0:
-        print('Count is' + str(ninetyDayPeriods) + f'for {coin}')
+    while ninety_day_periods > 0:
+        print(f'Count is {ninety_day_periods} for {coin}')
 
         start = df_list[0].index[0]
         end = start - datetime.timedelta(90)
@@ -220,7 +220,7 @@ def datagrabber(coin, fiat, start, end, ninetyDayPeriods):
                 axis=1, keys=['Open', 'High', 'Low', 'Close', 'Volume', 'Market Cap'])
 
             df_list.insert(0, next_ohlc_df)
-            ninetyDayPeriods -= 1
+            ninety_day_periods -= 1
             print('Pausing for 5 seconds, not to exceed API call limit')
 
             # Wait to not overload the API
