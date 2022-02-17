@@ -76,6 +76,7 @@ for coin in data:
     if coin['name'] == 'Magic Internet Money':
         data.remove(coin)
 
+print("After dropping stablecoins and wrappers")
 print('Number of coins to be in the Initial Pool:')
 print(len(data))
 #pprint(data)
@@ -146,12 +147,11 @@ def datagrabber(coin, fiat, start, end, ninetyDayPeriods):
         axis=1, keys=['Open', 'High', 'Low', 'Close', 'Volume', 'Market Cap'])
 
     # Getting more 90 day tranches of hourly OHLCV data. 4x90 = 360
-    count = ninetyDayPeriods
     df_list = [todays_ohlc_df]
 
 
-    while count > 0:
-        print('Count is' + str(count) + f'for {coin}')
+    while ninetyDayPeriods > 0:
+        print('Count is' + str(ninetyDayPeriods) + f'for {coin}')
 
         start = df_list[0].index[0]
         end = start - datetime.timedelta(90)
@@ -220,7 +220,7 @@ def datagrabber(coin, fiat, start, end, ninetyDayPeriods):
                 axis=1, keys=['Open', 'High', 'Low', 'Close', 'Volume', 'Market Cap'])
 
             df_list.insert(0, next_ohlc_df)
-            count -= 1
+            ninetyDayPeriods -= 1
             print('Pausing for 5 seconds, not to exceed API call limit')
 
             # Wait to not overload the API
