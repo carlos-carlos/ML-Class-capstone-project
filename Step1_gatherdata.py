@@ -36,9 +36,19 @@ fiat ='usd'
 
 # Get the initial data. The first 100 coins listed on Coingecko.
 # API call
-response = requests.get(
-    f"https://api.coingecko.com/api/v3/coins/markets?vs_currency={fiat}&order=market_cap_desc&per_page=100&page=1&sparkline=false")
-data = response.json()
+
+try:
+    response = requests.get(
+        f"https://api.coingecko.com/api/v3/coins/markets?vs_currency={fiat}&order=market_cap_desc&per_page=100&page=1&sparkline=false")
+    data = response.json()
+
+except Exception:
+    print("Couldn't connect to coingecko. Waiting 30 secs and trying again.....")
+    time.sleep(30)
+
+    response = requests.get(
+        f"https://api.coingecko.com/api/v3/coins/markets?vs_currency={fiat}&order=market_cap_desc&per_page=100&page=1&sparkline=false")
+    data = response.json()
 
 print('Starting coin pool')
 print(len(data))
@@ -145,7 +155,7 @@ def datagrabber(coin, fiat, start, end, ninety_day_periods):
                     f"https://api.coingecko.com/api/v3/coins/{coin}/market_chart/range?vs_currency={fiat}&from={start}&to={now}")
                 data = response.json()
 
-            except:
+            except Exception:
                 print("Couldn't connect to coingecko. Waiting 30 secs and trying again.....")
                 time.sleep(30)
                 # API call, max 90 days for hourly prices. More than that its daily. API limitation
@@ -161,7 +171,7 @@ def datagrabber(coin, fiat, start, end, ninety_day_periods):
                     f"https://api.coingecko.com/api/v3/coins/{coin}/market_chart/range?vs_currency={fiat}&from={end}&to={start}")
                 data = response.json()
 
-            except:
+            except Exception:
                 print("Couldn't connect to coingecko. Waiting 30 secs and trying again.....")
                 time.sleep(30)
                 # API call, max 90 days for hourly prices. More than that its daily. API limitation
