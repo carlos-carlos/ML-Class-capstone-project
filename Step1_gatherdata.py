@@ -92,6 +92,11 @@ input("Hit ENTER to proceed")
 # Custom function for getting Coingecko OHLCV data broken down by hour
 def datagrabber(coin, fiat, start, end, ninety_day_periods):
     '''
+    This function queries coingecko's API to get hourly close data for X number of cryptocoins
+    going back X number of ninety day periods. It then generates daily OHLCV data based on the
+    hourly prices for each coin. The result is a .csv file for each coin with daily OHLCV data
+    going back X number of ninety day periods.
+
     :param coin: name of cryptocoin according to coin 'id' on CoinGecko
     :param fiat:  name of a "regular" currency i.e. usd, eur, gbp and so on
     :param start: unix timestamp
