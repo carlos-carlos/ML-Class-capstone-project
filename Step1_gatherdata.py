@@ -104,62 +104,21 @@ def datagrabber(coin, fiat, start, end, ninety_day_periods):
     :param ninety_day_periods: number of 90 day periods. 90 is the maximum days that you can get hourly data for
     :return: A data frame of hourly OHLCV data for a cryptocoin(s)
     '''
+    df_list = []
 
-    # API call for minutely data for the present day
-    try:
-        # API call, max 90 days for hourly prices. More than that its daily. API limitation
-        response = requests.get(
-            f"https://api.coingecko.com/api/v3/coins/{coin}/market_chart/range?vs_currency={fiat}&from={start}&to={now}")
-        data = response.json()
+    count = ninety_day_periods
 
-    except:
-        print("Couldn't connect to coingecko. Waiting 30 secs and trying again.....")
-        time.sleep(30)
-        # API call, max 90 days for hourly prices. More than that its daily. API limitation
-        response = requests.get(
-            f"https://api.coingecko.com/api/v3/coins/{coin}/market_chart/range?vs_currency={fiat}&from={start}&to={now}")
-        data = response.json()
+    while count > 0:
+        print(f'Count is {count} for {coin}')
 
-    # Prepare prices as we did before but this time its minutes of the present day, not the hours of the prior 90 days
-    new_df = pd.DataFrame(data['prices'], columns=['dates', 'prices'])
-    new_df['dates'] = pd.to_datetime(new_df['dates'], unit='ms')
-    new_df = new_df.set_index('dates')
-    new_df.index = new_df.index.tz_localize('UTC').tz_convert(current_timezone)
+        try:
+            start = df_list[0].index[0]
+            end = start - datetime.timedelta(90)
 
-    # Prepare volume as we did before but this time its minutes of the present day, not the hours of the prior 90 days
-    volumes_df = pd.DataFrame(data['total_volumes'], columns=['dates', 'volumes'])
-    volumes_df['dates'] = pd.to_datetime(volumes_df['dates'], unit='ms')
-    volumes_df = volumes_df.set_index('dates')
-    volumes_df.index = volumes_df.index.tz_localize('UTC').tz_convert(current_timezone)
-
-    # Prepare hourly market cap data
-    cap_df = pd.DataFrame(data['market_caps'], columns=['dates', 'mcaps'])
-    cap_df['dates'] = pd.to_datetime(cap_df['dates'], unit='ms')
-    cap_df = cap_df.set_index('dates')
-    cap_df.index = cap_df.index.tz_localize('UTC').tz_convert(current_timezone)
-
-    # Calculate todays Open High Low Close Volume(OHLCV) values
-    min_df = new_df.groupby([new_df.index.date]).min()  # Get the lows for each day
-    max_df = new_df.groupby([new_df.index.date]).max()  # Get the highs for each day
-    open_df = new_df.groupby([new_df.index.date]).first()  # Get the first value of each day for Open
-    close_df = new_df.groupby([new_df.index.date]).last()  # Get the last value of each day for Close
-    volume_df = volumes_df.groupby([volumes_df.index.date]).last()  # Get the latest volume for the day
-    mcaps_df = cap_df.groupby([cap_df.index.date]).mean()  # Get the mean mcaps for each day
-
-    todays_ohlc_df = pd.concat(
-        [open_df['prices'], max_df['prices'], min_df['prices'], close_df['prices'], volume_df['volumes'],
-         mcaps_df['mcaps']], \
-        axis=1, keys=['Open', 'High', 'Low', 'Close', 'Volume', 'Market Cap'])
-
-    # Getting more 90 day tranches of hourly OHLCV data. 4x90 = 360
-    df_list = [todays_ohlc_df]
-
-
-    while ninety_day_periods > 0:
-        print(f'Count is {ninety_day_periods} for {coin}')
-
-        start = df_list[0].index[0]
-        end = start - datetime.timedelta(90)
+        except IndexError:
+            start = today
+            end = start - datetime.timedelta(90)
+            print("No data, proceeding with first grab")
 
         # Debug code
         #print('LOOK HERE FOR DATES') # Check this again once EDT returns
@@ -177,19 +136,38 @@ def datagrabber(coin, fiat, start, end, ninety_day_periods):
         #print(start)
         #print(end)
 
-        try:
-            # API call, max 90 days for hourly prices. More than that its daily. API limitation
-            response = requests.get(
-                f"https://api.coingecko.com/api/v3/coins/{coin}/market_chart/range?vs_currency={fiat}&from={end}&to={start}")
-            data = response.json()
+        if count == ninety_day_periods:
 
-        except:
-            print("Couldn't connect to coingecko. Waiting 30 secs and trying again.....")
-            time.sleep(30)
-            # API call, max 90 days for hourly prices. More than that its daily. API limitation
-            response = requests.get(
-                f"https://api.coingecko.com/api/v3/coins/{coin}/market_chart/range?vs_currency={fiat}&from={end}&to={start}")
-            data = response.json()
+            # API call for minutely data for the present day
+            try:
+                # API call, max 90 days for hourly prices. More than that its daily. API limitation
+                response = requests.get(
+                    f"https://api.coingecko.com/api/v3/coins/{coin}/market_chart/range?vs_currency={fiat}&from={start}&to={now}")
+                data = response.json()
+
+            except:
+                print("Couldn't connect to coingecko. Waiting 30 secs and trying again.....")
+                time.sleep(30)
+                # API call, max 90 days for hourly prices. More than that its daily. API limitation
+                response = requests.get(
+                    f"https://api.coingecko.com/api/v3/coins/{coin}/market_chart/range?vs_currency={fiat}&from={start}&to={now}")
+                data = response.json()
+
+        else:
+
+            try:
+                # API call, max 90 days for hourly prices. More than that its daily. API limitation
+                response = requests.get(
+                    f"https://api.coingecko.com/api/v3/coins/{coin}/market_chart/range?vs_currency={fiat}&from={end}&to={start}")
+                data = response.json()
+
+            except:
+                print("Couldn't connect to coingecko. Waiting 30 secs and trying again.....")
+                time.sleep(30)
+                # API call, max 90 days for hourly prices. More than that its daily. API limitation
+                response = requests.get(
+                    f"https://api.coingecko.com/api/v3/coins/{coin}/market_chart/range?vs_currency={fiat}&from={end}&to={start}")
+                data = response.json()
 
         # Prepare the hourly price data
         new_df = pd.DataFrame(data['prices'], columns=['dates', 'prices'])
@@ -225,7 +203,7 @@ def datagrabber(coin, fiat, start, end, ninety_day_periods):
                 axis=1, keys=['Open', 'High', 'Low', 'Close', 'Volume', 'Market Cap'])
 
             df_list.insert(0, next_ohlc_df)
-            ninety_day_periods -= 1
+            count -= 1
             print('Pausing for 5 seconds, not to exceed API call limit')
 
             # Wait to not overload the API
@@ -249,7 +227,7 @@ def datagrabber(coin, fiat, start, end, ninety_day_periods):
 
 # Run the function. Get and save the data
 for coin in coinpool:
-    final_df = datagrabber(coin, fiat, start, end, 14)
+    final_df = datagrabber(coin, fiat, start, end, 15)
 
     # Saves the plot graph to a file
     dataDir = 'DATA/COINHISTDATA/'
