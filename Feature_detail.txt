@@ -1,0 +1,168 @@
+DESCRIPTION OF THE FEATURES USED IN THE PROJECT
+------------------------------------------------
+
+Relative Strength Index (RSI)
+-------------------------------
+
+The relative strength (RSI) is a momentum indicator used in technical analysis 
+that measures the magnitude of recent price changes to evaluate overbought or 
+oversold conditions in the price of a stock or other asset.
+The RSI is displayed as an oscillator (a line graph that moves between 
+two extremes) and can have a reading from 0 to 100. The indicator was originally 
+developed by J. Welles Wilder Jr. and introduced in his seminal 1978 book, 
+“New Concepts in Technical Trading Systems.” 
+Source: Investopedia
+
+
+Bollinger Bands®
+(BB_high, BB_low)
+-------------------------------------
+
+A Bollinger Band® is a technical analysis tool defined by a set of trendlines
+plotted two standard deviations (positively and negatively) away from a 
+simple moving average (SMA) of a security's price, but which can be adjusted to 
+user preferences. Bollinger Bands® were developed and copyrighted by 
+famous technical trader John Bollinger, designed to discover opportunities that 
+give investors a higher probability of properly identifying when an asset is 
+oversold or overbought.
+Source: Investopedia
+
+
+Average True Range (ATR)
+-------------------------------------
+
+The average true range (ATR) is a technical analysis indicator, introduced by 
+market technician J. Welles Wilder Jr. in his book New Concepts in 
+Technical Trading Systems, that measures market volatility by decomposing the 
+entire range of an asset price for that period. The true range indicator is 
+taken as the greatest of the following: current high less the current low; the 
+absolute value of the current high less the previous close; and the absolute 
+value of the current low less the previous close. The ATR is then a 
+moving average, generally using 14 days, of the true ranges. 
+The ATR was originally developed for use in commodities markets but has since 
+been applied to all types of securities.
+Source: Investopedia
+
+
+Moving Average Convergence Divergence (MACD)
+--------------------------------------------------
+
+Moving average convergence divergence (MACD) is a trend-following 
+momentum indicator that shows the relationship between two moving averages of a
+security’s price. The MACD is calculated by subtracting the 26-period 
+exponential moving average (EMA) from the 12-period EMA.
+The result of that calculation is the MACD line. A nine-day EMA of the MACD 
+called the "signal line," is then plotted on top of the MACD line, which can 
+function as a trigger for buy and sell signals.
+Source: Investopedia
+
+
+Stochastic Oscillator(STOCH)
+--------------------------------------------------
+
+A stochastic oscillator is a momentum indicator comparing a particular closing 
+price of a security to a range of its prices over a certain period of time. 
+The sensitivity of the oscillator to market movements is reducible by adjusting 
+that time period or by taking a moving average of the result. It is used to 
+generate overbought and oversold trading signals, utilizing a 0–100 bounded 
+range of values. 
+Source: Investopedia
+
+
+Average Directional Index (ADX)
+------------------------------------------------------
+
+The average directional index (ADX) is used to determine when the price is 
+trending strongly.  ADX is used to quantify trend strength. ADX calculations are
+based on a moving average of price range expansion over a given period of time. 
+The default setting is 14 bars, although other time periods can be used. ADX can
+be used on any trading vehicle such as stocks, mutual funds, exchange-traded
+funds and futures. ADX is plotted as a single line with values ranging from a
+low of zero to a high of 100.
+Source: Investopedia
+
+
+Directional Movement Index (DMI)
+(DI_PLUS, DI_MINUS)
+-----------------------------------------------------
+
+The directional movement index (DMI) is an indicator developed by
+J. Welles Wilder in 1978 that identifies in which direction the price of an
+asset is moving. The indicator does this by comparing prior highs and lows and 
+drawing two lines: a positive directional movement line (+DI) and a
+negative directional movement line (-DI). An optional third line, called
+the average directional index (ADX), can also be used to gauge the
+strength of the uptrend or downtrend. 
+Source: Investopedia
+
+
+Returns
+(return_1d, return_7d, return_14d, return_30d,return_60d, return_90d)
+-----------------------------------------------------------------------
+
+Historical returns calculated for various time periods from the daily close 
+prices. They measure the change in price for the given time period. Periods in
+this dataset are daily periods and include returns
+over 1, 7, 14, 30, 60, and 90 days. They are chosen to match up roughly with
+basic trading cycles for cryptocurrency, which can be traded 24/7.
+The change is expressed as a percentage and is calculate
+using pandas .pct_change() method.  
+
+Lagged Returns
+(return_1d_lagX - return_90d_lagX)
+---------------------------------------------
+
+“Returns from previous time periods meant to train a model to learn return
+patterns in the hope of predicting future returns. To capture the price trend 
+for various historical lags, the corresponding returns for the lag period are
+calculated and then transformed into the daily geometric mean. The lag periods
+match the ones for the historical returns above. Here, the Lagged Returns values
+are also clipped at the 0.01st and the 99.99th percentile. The returns are then
+“moved up” to the “present” using pandas .shift() method.”
+
+Source: 
+Machine Learning for Algorithmic Trading, Stefan Jansen, Packt, 2020 (98, 201)
+
+
+Target Forward Returns
+--------------------------------
+
+These will serve as the target “y” values for the model. These will test the
+predictions for various “future” periods. To simulate this, the returns are
+shifted backwards by their respective time periods with pandas .shift(),
+simulating a “target” return to test against. “The goal is to identify the
+holding period that produces the best predictive accuracy, as measured by the
+Information Coefficient (IC).”
+
+Source: 
+Machine Learning for Algorithmic Trading, Stefan Jansen, Packt, 2020 (202)
+
+
+year_XXX - month_X
+-------------------------------------
+
+These are time indicator variables and are dummy encoded, so that they can be
+processed by a model. Their presence is meant to capture any “seasonal effects”
+and changing market conditions more broadly.
+
+
+Principal_component_1 - 6
+--------------------------------------
+
+These are used in place of “known risk factors” such as Fama-French factors,
+which can’t be readily adapted to cryptocurrency without full blockchain
+transaction data (TX) for every cryptocurrency in the dataset. 
+Instead of “known risk factors”, this project makes use of “data driven”
+risk factors. These are the top 6 factors, which taken together “explain”
+over 70% of all the returns, according to PCA(), using default parameters.
+The factors were used to generate “factor betas”, which are used as features
+herein, intended to quantify the amount of risk exposure in a portfolio 
+(the pool of cryptocurrencies in this case) to the factors found by PCA().
+This could potentially also measure how much the risk is “worth” according to
+the market by indicating how large the returns could theoretically be, and how
+much of the returns are coming from unknown sources, that is, not driven by
+these 6 factors. 
+
+Source: 
+Machine Learning for Algorithmic Trading, Stefan Jansen, Packt, 2020 
+(189 – 191, 97, 421.)

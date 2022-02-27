@@ -1,0 +1,179 @@
+# Capstone Proposal – Extracting Trade Signals from Technical Analysis with Sci-Kit Learn
+
+## Domain Background
+-------------------------------------
+
+The cryptocurrency domain needs no introduction in 2021. What began with Bitcoin in 2009 has since morphed into a vibrant sector, over the following decade growing from a niche space for decentralized finance and the privacy conscious to a more mainstream asset class counting institutional investors[1][2][3] and hedge funds[4] among its participants. Technical Analysis[5] and Fundamental Analysis[6] techniques have been leveraged to evaluate investments and identify trading opportunities. Technical analysis is used to analyze statistical trends gathered from trading activity, such as price movement and volume while Fundamental Analysis[7] is a method of measuring a security's intrinsic value by examining related economic and financial factors[8].
+
+Interest in Quantitative trading or simply “Quant” trading has grown with the proliferation of machine learning[9] and access to this technology without the need of “super computers”. During a previous CN course, I learned the basics of Quant trading with Python on the now defunct Quantopian community platform, using Fundamental Analysis as the starting point. My goal with this project is to leverage the algorithms I have learned in this course and Technical Analysis features to identify trading opportunities in the cryptocurrency market.
+
+
+## Problem Statement
+-------------------------------------
+
+The Cryptocoin markets are famous for their volatility. Using Technical Analysis indicators as features, is it possible to identify usable trading signals in the features? Could these signals be used to make a strategy that outperforms Bitcoin returns over a period of time? Which model can best identify the most promising signals from the features? 
+
+Platforms such as Quant-Rocket and the sadly now defunct Quantopian Community platform provided free research environments to experiment with different models, to look for trading signals and for asset portfolio optimization. Quantopian had its own Python library of classes and methods that vanished with the platform itself, though many of these live on as community driven open source projects. There is a plethora of literature on Quant Finance such as blog posts, scientific white papers, and published strategies, though these primarily concern the stock market. In fact the very purpose of Quantopian Community was to competitively crowd source Quant strategies for the stock market by offering a free research environment and competitions for the best model. Though not readily applicable to crypotcurrency “out of the box” in the exact same way as the stock market, there are certainly a plethora of market research enterprises applying aspects of quant finance to better understand cryptocurrency using technical analysis, as well as “on-chain analysis”[10], to pin-down fundamentals of cryptocurrency valuation. Automated trading bots also leverage algorithms to automate the buying and selling of cryptocurrency at key levels based on market data, both technical analysis as well as “on-chain analysis”[11] data. Furthermore, sentiment is has a very large impact on cryptocurrency returns and price movements, and much resources are devoted to attempting to make sense of this dynamic and if signals can also be reliably harnessed from sentiment data as well. 
+
+Of course we could just pick a portfolio of coins at semi random based on the market capitalization and average 24hr trading volume, re-balancing the portfolio based on the “rise and fall” of coins into our market cap and trading volume criteria. This might yield good results in a bull market, or it might be highly given over to chance and yield poor results over the long-term.  
+
+## Datasets and Inputs
+---------------------------------------
+
+The data for this project will come from CoinGecko’s free API[12]. CoinGecko provides free access to market data for hundreds of coins without the need for payment, account sign ups, API keys, or unreasonable API call limitations. CoinGecko provides hourly, daily, and minute data going back several years and its price data is calculated using a global volume-weighted average price formula[13].
+
+This is preferable over data pulled from a single source exchange as it provides a clearer picture of price action as a whole across exchanges and timezones. 
+A pool of cryptocoins for this experiment will be created by screening cryptocoins based on the following criteria:
+
+1) Is not a stablecoin[14].  
+2) Has a Market Capitalization[15] threshold above $2 billion.
+3) Has a trading volume above $100 million. 
+
+Initially, a much smaller pool of coins (taken from the top 10) will be used during the debugging phase of the project to ensure all the logic is working as intended and that the models are producing “plausible” (this does not mean “good” or “bad”!) results.
+
+This criteria was chosen because stablecoins mimic the movement of fiat (traditional currency) which is a different asset class that cryptocoins. The market capitalization and dollar volume criteria will reduce noise in the dataset and training time. Low market cap and low volume cryptcoins are also prone to price manipulation (51% attacks for example), artificial price action, and are harder to trade, so would likely not be included in professional portfolios. Since the cryptocoin markets are highly volatile, the assumption is made that market trends and momentum follow shorter time periods, with reversals happening much faster and more suddenly than in other asset classes. 
+
+Starting with 3 years of daily OHLCV data for each cryptocoin in the initial pool, technical analysis indicators and lagged returns will be calculated, and will constitute the features that the models will be train/tested on to search for Alpha factors and trading signals. The alpha factors are where actual potential trading signals will be, which is what the ML model(s) will optimize for. Technical Analysis features will be calculated using Dario Lopez Padial’s “Technical Analysis Library in Python”[16] which contains 32 indicators comprised of 58 features[17].  
+
+For purposes of this project, features will be limited to Technical Analysis indicators that measure momentum, including Relative Strength Index (RSI), Moving Average Convergence Divergence (MACD), Average True Range (ATR),  Bollinger Bands,  Simple & Exponential Moving Averages (SMA/EMA), as well as lagged returns for 1 day, 2 weeks, 1 month, 2 months, and 3 months. These will be calculated for every coin in the dataset.
+
+Momentum oriented technical analysis indicators are specifically chosen to take a momentum based strategic approach to the project. 
+A momentum strategy holds that asset prices follow a trend which is reflected in “positive serial correlation”. The goal with such a strategy is to pick “winners” and to buy and hold those (“going long”) assets, while betting against (“shorting”) assets that do not.[18] Since the cryptocoin markets are highly volatile, the assumption is that market trends and momentum follow shorter time periods, with reversals happening much faster and more suddenly than in other asset classes. Thus it seems reasonable to me to target a momentum based strategy in this scenario. Furthermore, as mentioned earlier, cryptocoins are very much given to investor sentiment which has been observed to strongly impact market trends and momentum. This observation has led, for example, to establishing the “Crypto Fear and Greed Index”[19] which attempts to quantify sentiment with this asset class. 
+ 
+## Solution Statement
+------------------------------------
+The goal is to optimize for Alpha factors and the trade signals they may or may not contain, or rather, features as factors containing Alpha[20]. “Alpha Factors are transformations of raw data that aim to predict asset price movements. They are designed to capture risks that drive asset returns.” (Stefan Jansen, Machine Learning for Algorithmic Trading, Second Edition, 2020, Pakt Publishing, pg.82).
+
+Alpha factors can be derived from a great many sources of data depending on the economic assumptions made when approaching the “problem” one aims to solve. Since we are using a momentum based approach, I will use technical analysis metrics that measure momentum from market data, to “engineer” Alpha factors. Alpha itself is defined as “the average return in excess of a benchmark.”(Stefan Jansen, Machine Learning for Algorithmic Trading, Second Edition, 2020, Pakt Publishing, pg.115).
+
+The Machine Learning process I learned in this course will be applied towards optimizing a “predictive objective” within the Alpha factors engineered from the features in the data, in search of trading signals. The goal of Machine Learning here will be to optimize for trading signals from the Alpha Factors derived from  features in the dataset.
+
+## Benchmark Model
+-------------------------------------
+
+Future daily returns will serve as the target ”y“ labels to evaluate the predictions of the model(s). These “future” returns are actually generated by shifting returns for a timeframe of x backwards in time by x days, making them “forward” returns. The purpose of this is to find holding periods for the coins in the coin pool that hold the highest predictive accuracy. This is measured with the Information coefficient(IC). These are the target y values for the models.
+
+Bitcoin will serve as the benchmark for the coin pool “portfolio” during the last phase of the project, where a vectorized backtest will be undertaken from the model(s) predictions to compare performance. The performance of the predicted returns against Bitcoin will provide a “final” validation of how significant the trade signals within the Alpha Factors turn out to be, and how long the predictive signals “hold true”. 
+
+Bitcoin will be used as the benchmark instead of another asset like gold or a stock market benchmark such as the S&P 500, because these are very different asset classes with very different dynamics and behavior. Furthermore, Bitcoin ETFs[21] such as the recently listed “BTF” tend to invest heavily via futures contracts[22][23] or mimic the price action of Bitcoin itself[24]. 
+
+Bitcoin itself is the dominant cryptocurrency (as of December 2021), fluctuating between 37-40% market share of the entire Cryptocoin market .The movements of the entire market have been observed to have a strong correlation to Bitcoin. 
+
+## Evaluation Metrics
+--------------------------------------------
+
+Evaluation metrics used in this project shall include:
+
+1. Information Coefficient(IC) “which measures the average excess return per unit of risk taken by dividing Alpha by the tracking risk.” (Stefan Jansen, Machine Learning for Algorithmic Trading, Second Edition, 2020, Pakt Publishing, pg.118).
+“It measures the rank correlation between return forecasts, like those implied by an alpha factor, and the actual forward returns”.(Stefan Jansen, Machine Learning for Algorithmic Trading, Second Edition, 2020, Pakt Publishing, pg.124) IC will be used to evaluate the performance of the model(s) and also of the predictions.
+
+2. Root Mean Squared Error (RMSE) will be used to evaluate the performance of the model(s) itself. 
+
+3. Spearman rank correlation, used along with mean squared error to score the difference between the actual and predicted values. 
+
+4. Factor Turnover, “measures the share of assets currently in a factor quantile that was not in that quantile in the last period.” (Stefan Jansen, Machine Learning for Algorithmic Trading, Second Edition, 2020, Pakt Publishing, pg.117). It basically shows how many trades are needed to adjust a portfolio vis-a-vis the signals from the Alpha Factors.
+
+5. Alpha, The difference between the model predicted returns and the “actual” asset returns based on historic price data. Alpha as a metric, indicates how strong or weak a signal could be. 
+
+6. Beta, the difference in movement of the returns between the model predictions and the “actual” asset returns. Beta as a metric measures volatility and risk exposure. A higher value means higher volatility.
+
+IC, Factor Turnover, Alpha, and Beta metrics are specific to quant finance and  evaluate the “strength” and “clarity” of signals within factors and the “skill of the investment manager”, which in this case is an algorithm. 
+
+The IC and RMSE metrics are generated during the model(s) prediction phase, while Alpha, Beta, and Factor Turnover are generated using the Alphalens evaluation phase, which is where the signal strength for the Alpha factors is evaluated.
+Alphalens[25], is used to score the “predictions” of the alpha factors and compare them to forward returns of the benchmark. Backtesting the returns of our long/short portfolio against the benchmark (Bitcoin) will provide a visualization to evaluate the performance of the signals in a “live” environment.  
+
+## Project Design
+------------------------------------------
+
+The project will be organized into 8 “steps” which are each within their own
+python scripts serving one specific purpose over the course of the proeject.
+Please also see Readme.md for a more detailed description of each step in the
+project. For a detailed description of each feature used in this specific project
+please see the file feature_detail.txt.
+
+1. Gather OHLCV data for cryptocoins 
+
+- Not a Stablecoin.
+- Not a wrapper coin.
+- Save a .csv for each coin.
+
+
+2. Establish the initial data pool 
+
+- MultiIndex DataFrame of all the coins.
+- Make sure all the time periods match up for all the coins.
+- Update the data with new days as time goes on.
+- Apply filters to exclude coins from the data pool such as above $2 Billion Market      cap and above 100 million daily USD volume.
+
+3. Initial insights and observations
+
+- Engineer the features for the data from the initial pool
+- Generate histograms and distribution plots for each feature.
+- Select and compute Technical analysis indicators using TA-lib.
+- Generate target forward returns (the target “y” values).
+- Generate heatmaps for the features and y labels.
+
+4. Compute Risk Factors
+
+- Use PCA() clustering to identify the largest drivers of returns in the dataset.
+- Generate sample Eigenportfolios as sample asset allocations for comparison against the benchmark.
+
+5. Statistical Inference
+- Perform statistical inference on the returns calculated prior using Linear Ordinary Least Square(Linear OLS). 
+-Overview about p-values, coefficients, skew, and residual distribution among others.
+
+6. Predictions
+
+- Instantiate the class MultipleTimeSeriesCV which invokes Sklearn TimeSeriesCV
+  in way that ensures data does not overlap or happen before it is known.
+- Generate multiple train/test splits from the the initial data for the models.
+- Perform Cross Validation with the above class and make predict returns with Linear Regression, Ridge Regression, and Lasso Regression.
+- First model evaluation, using the Information Coefficient(IC) and Root Mean Squared Error(RMSE).
+
+7. Alphalens Evaluaion
+- Second model evaluation using Quant specific metric such as Alpha, Beta, and Factor Turnover.
+- Visualize factor quantiles by lag period (1 day, 2 weeks, 1 month, 2 months, 
+3 months).
+
+- Comparison of the predictive signals from each model in step 6, and evaluation of the strength of Alpha Signals.
+
+8. Vectorized Backtest
+
+- Third model evaluation, transform the model predictions into trading signals.
+- Backtest the model predicted returns against Bitcoin returns.
+
+
+NOTE FOR STEP 4: For the Risk Factors, the Fama-French Five Factor Model[26] is commonly used with stocks to calculate and visualize exposure to known risk factors in the market. However, there are 2 problems with this approach vis-a-vis cryptocoins. First, the Fama-French Five Factor Model can not be applied “out of the box” to cryptocoins because it requires certain fundamental valuation methods, that simply don’t exist for cryptocoins. The paper “Application of the Fama French 3-Factor model to the cryptocurrency and token markets”[27] investigates adapting the older Fama-French Three Factor Model[28], using a cryptocoin specific indicator known as the Network to Value Transaction Ratio (NVT)[29]. However, it is difficult to freely acquire total daily transaction volume data, an on-chain analytic, that is a critical component of NVT without a hefty fee, for many of the cryptocoins in my dataset. However, Stefan Jansen in his book “Machine Learning for Algorithmic trading”, details a different method for capturing and visualizing risk as well as other useful insights, which seems applicable to the volatile crytocoin market, considering that this project is taking a momentum based approach. It involves a purely data-driven approach using the .PCA() algorithm to treat “risk factors as latent variables and uses factor analytic techniques like PCA to simultaneously learn the factors from data and estimate  how they drive returns” (Stefan Jansen, Machine Learning for Algorithmic Trading, Second Edition, 2020, Pakt Publishing, pg.421). PCA() can be applied to daily returns, and perhaps returns for longer periods (with more date), to get this information.
+
+
+Citations
+------------------
+[1] https://money.usnews.com/investing/stock-market-news/slideshows/bank-stocks-investing-in-cryptocurrency
+[2] https://www.cnbc.com/2020/12/18/new-bitcoin-investors-buying-20-million-or-more-have-flooded-into-crypto-this-year-as-the-price-so.html
+[3] https://markets.businessinsider.com/news/stocks/bitcoin-price-rally-different-2017-frenzy-retail-institutional-adoption-mike-novogratz-2020-11
+[4] https://www.forbes.com/sites/carriemccabe/2021/07/21/hedge-funds-invest-in-crypto/
+[5] https://www.investopedia.com/terms/t/technicalanalysis.asp
+[6] https://www.investopedia.com/terms/f/fundamentalanalysis.asp
+[7] https://www.investopedia.com/terms/t/technicalanalysis.asp
+[8] https://www.investopedia.com/terms/f/fundamentalanalysis.asp
+[9] https://www.investopedia.com/articles/active-trading/111214/quants-what-they-do-and-how-theyve-evolved.asp
+[10] https://phemex.com/academy/what-is-on-chain-analysis
+[11] https://phemex.com/academy/what-is-on-chain-analysis
+[12] https://www.coingecko.com/api/documentations/v3
+[13] https://www.coingecko.com/en/methodology
+[14] https://www.coindesk.com/learn/what-is-a-stablecoin/
+[15] https://www.nerdwallet.com/article/investing/what-is-market-cap
+[16] https://technical-analysis-library-in-python.readthedocs.io/en/latest/index.html
+[17] https://towardsdatascience.com/technical-analysis-library-to-financial-datasets-with-pandas-python-4b2b390d3543
+[18] Stefan Jansen, Machine Learning for Algorithmic Trading, Second Edition, 2020, Pakt Publishing, pg.84
+[19] https://alternative.me/crypto/fear-and-greed-index/
+[20] https://www.investopedia.com/terms/a/alpha.asp
+[21] https://www.nasdaq.com/articles/second-bitcoin-linked-etf-in-the-us-to-begin-trading-on-friday-2021-10-20
+[22] https://www.cbsnews.com/news/bitcoin-etf-futures-listing-proshares-bito/
+[23] https://time.com/nextadvisor/investing/cryptocurrency/bitcoin-etf-approved/
+[24] https://www.investopedia.com/investing/bitcoin-etfs-explained/
+[25] https://quantopian.github.io/alphalens/
+[26] https://breakingdownfinance.com/finance-topics/performance-measurement/fama-french-5-factor-model/
+[27] https://repositorio.ucp.pt/bitstream/10400.14/31260/1/152417010_Diana%20Mara%20Costa%20Coelho_DPDFA.pdf
+[28] https://corporatefinanceinstitute.com/resources/knowledge/finance/fama-french-three-factor-model/
+[29] https://charts.woobull.com/bitcoin-nvt-signal/
