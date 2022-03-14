@@ -109,20 +109,64 @@ def update_data(coin,fiat,start,end):
 
     return todays_ohlc_df
 
-# Filter function
+# Filter functions
+
+# Vol or Mcap
 def filterdata(mdf, rule, window, threshold):
     '''
     :param mdf: A MultiIndex DataFrame
     :param rule: Str 'Market Cap' or 'Volume'
     :param window: Int: the window for the rolling mean to compare against threshold
     :param threshold: Int: The cutoff to decide what gets filtered
-    :return: MultiIndex Dataframe filtered by the abpve
+    :return: MultiIndex Dataframe filtered by USD Vol or Mcap
     '''
     filtered = []
     for coin, new_df in mdf.groupby(level=1):
         if new_df.set_index(new_df.index.get_level_values('Dates'))[f'{rule}'].rolling(window).mean().mean() > threshold:
             filtered.append(new_df)
 
+    print(f"Coins after filter {str(len(filtered))}")
+    mdf = pd.concat(filtered)
+    mdf.sort_index(inplace=True)
+
+    return mdf
+
+# Cumulative Returns
+def cumufilter(mdf, cutoff, rule, threshold):
+    '''
+    :param mdf: A MultiIndex DataFrame
+    :param cutoff: Int: A year e.g. 2021
+    :param rule: Str: window for cummulative returns e.g. 'D','W','M','3M' etc..
+    :param threshold: Int: The top X coins
+    :return: MultiIndex Dataframe filtered by cumulative returns
+    '''
+    # Prepare
+    start = cutoff
+
+    cumu_mdf = mdf
+    new_mdf = mdf
+    cumu_mdf = cumu_mdf.loc[str(start):]
+    cumu_mdf = cumu_mdf.swaplevel()
+    cumu_mdf = cumu_mdf.Close.unstack('Coin').sort_index()
+    cumu_mdf = cumu_mdf.pct_change().dropna(how='all')
+
+    # Rank
+    score = cumu_mdf.resample(f'{rule}')\
+        .last().cumprod(axis=1).dropna(how='all')\
+        .mean().sort_values(ascending=False)\
+        .nlargest(n=threshold)
+    filter = score.index
+
+    # Filter
+    filtered = []
+    for coin, new_df in mdf.groupby(level=1):
+        if new_df.index[1][1] in filter:
+            filtered.append(new_df)
+
+    # See the coins
+    #print(score.to_string())
+
+    # Combine and return
     print(f"Coins after filter {str(len(filtered))}")
     mdf = pd.concat(filtered)
     mdf.sort_index(inplace=True)
