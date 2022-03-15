@@ -35,10 +35,10 @@ end = end.strftime('%s')  # make it epoch for the API
 fiat ='usd'
 
 # Data directories
-coin_dataDir = 'DATA/COINHISTDATA/'
-#coin_dataDir = 'DATA/TESTDIR/HIST/' # Debug dir for testing I/O logic and/or issues. It should be a clone of the above dir.
-coinMDF_dataDir = 'DATA/COMBINEDDATA/'
-#coinMDF_dataDir = 'DATA/TESTDIR/POOL/' # Debug dir for testing. It should be a clone of the above dir.
+#coin_dataDir = 'DATA/COINHISTDATA/'
+coin_dataDir = 'DATA/TESTDIR/HIST/' # Debug dir for testing I/O logic and/or issues. It should be a clone of the above dir.
+#coinMDF_dataDir = 'DATA/COMBINEDDATA/'
+coinMDF_dataDir = 'DATA/TESTDIR/POOL/' # Debug dir for testing. It should be a clone of the above dir.
 
 # Helpers
 idx = pd.IndexSlice
@@ -253,7 +253,16 @@ if should_update == 'y':
     #print(coin_mdf.loc[('2022-01-02', 'bitcoin')]['Close'])
     #print(coin_mdf.index)
     if should_filter == 'y':
-        coin_mdf = filterdata(coin_mdf, 'Market Cap', 180, 10000000000)
+        print("Press 1 to filter by cumulative returns")
+        print("Press 2 to filter by Volume or Market Capitalization")
+        choose_filter = int(input('Choice: '))
+
+        if choose_filter == 1:
+            coin_mdf = cumufilter(coin_mdf, 2021, 'M', 15)
+        elif choose_filter == 2:
+            coin_mdf = filterdata(coin_mdf, 'Market Cap', 180, 10000000000)
+        else:
+            print("You didn't Choose a Filter")
 
     #print(coin_mdf.to_string())
 
@@ -304,7 +313,16 @@ else:
     #print(coin_mdf.index)
 
     if should_filter == 'y':
-        coin_mdf = filterdata(coin_mdf, 'Market Cap', 180, 10000000000)
+        print("Press 1 to filter by cumulative returns")
+        print("Press 2 to filter by Volume or Market Capitalization")
+        choose_filter = choose_filter = int(input('Choice: '))
+
+        if choose_filter == 1:
+            coin_mdf = cumufilter(coin_mdf, 2021, 'M', 15)
+        elif choose_filter == 2:
+            coin_mdf = filterdata(coin_mdf, 'Market Cap', 180, 10000000000)
+        else:
+            print("You didn't Choose a Filter")
 
     #print(coin_mdf.to_string())
 
